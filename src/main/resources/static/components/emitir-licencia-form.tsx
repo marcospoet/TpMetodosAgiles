@@ -1,6 +1,8 @@
 "use client"
 
-import { useState, useEffect } from "react"
+import type React from "react"
+
+import { useState, useEffect, useRef } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
@@ -10,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, CheckCircle2, Search, ArrowLeft } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import gsap from "gsap"
 
 // Tipo para el titular
 interface Titular {
@@ -77,11 +80,62 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
   const [costo, setCosto] = useState<number>(0)
   const [errorEdad, setErrorEdad] = useState<string>("")
 
+  const formRef = useRef<HTMLDivElement>(null)
+  const busquedaRef = useRef<HTMLDivElement>(null)
+  const datosRef = useRef<HTMLDivElement>(null)
+  const emitirRef = useRef<HTMLDivElement>(null)
+  const alertRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Animación inicial del formulario
+    if (formRef.current) {
+      gsap.fromTo(formRef.current, { opacity: 0, y: 20 }, { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" })
+    }
+  }, [])
+
   useEffect(() => {
     if (claseLicencia && titular) {
       calcularVigenciaYCosto()
+
+      // Animar la sección de emisión
+      if (emitirRef.current) {
+        gsap.fromTo(
+          emitirRef.current.querySelectorAll(".animate-item"),
+          { opacity: 0, y: 10 },
+          {
+            opacity: 1,
+            y: 0,
+            duration: 0.4,
+            stagger: 0.1,
+            ease: "power2.out",
+          },
+        )
+      }
     }
   }, [claseLicencia, titular])
+
+  // Manejar cambio en el tipo de documento
+  const handleTipoDocumentoChange = (value: string) => {
+    setTipoDocumento(value)
+    setNumeroDocumento("") // Limpiar el campo al cambiar el tipo
+  }
+
+  // Manejar cambio en el número de documento
+  const handleNumeroDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+
+    if (tipoDocumento === "DNI") {
+      // Para DNI, solo permitir números
+      const onlyNumbers = value.replace(/[^0-9]/g, "")
+      setNumeroDocumento(onlyNumbers)
+    } else if (tipoDocumento === "Pasaporte") {
+      // Para Pasaporte, convertir a mayúsculas
+      setNumeroDocumento(value.toUpperCase())
+    } else {
+      // Si no hay tipo seleccionado, permitir cualquier entrada
+      setNumeroDocumento(value)
+    }
+  }
 
   const buscarTitular = () => {
     setError("")
@@ -90,6 +144,10 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
 
     if (!tipoDocumento || !numeroDocumento) {
       setError("Debe completar tipo y número de documento")
+      // Animación de error
+      if (busquedaRef.current) {
+        gsap.fromTo(busquedaRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
     }
 
@@ -100,10 +158,36 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
 
     if (!titularEncontrado) {
       setError("No se encontró ningún titular con ese documento")
+      // Animación de error
+      if (busquedaRef.current) {
+        gsap.fromTo(busquedaRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
     }
 
-    setTitular(titularEncontrado)
+    // Animación al encontrar titular
+    if (busquedaRef.current) {
+      gsap.to(busquedaRef.current, {
+        y: -10,
+        opacity: 0.8,
+        duration: 0.3,
+        onComplete: () => {
+          setTitular(titularEncontrado)
+          // Animar la aparición de los datos del titular
+          setTimeout(() => {
+            if (datosRef.current) {
+              gsap.fromTo(
+                datosRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" },
+              )
+            }
+          }, 100)
+        },
+      })
+    } else {
+      setTitular(titularEncontrado)
+    }
   }
 
   const calcularVigenciaYCosto = () => {
@@ -148,10 +232,10 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
       costo,
     })
 
-    // Simulación de éxito
+    // Mostrar mensaje de éxito inmediatamente
     setSuccess(true)
 
-    // Redireccionar después de 2 segundos
+    // Redireccionar después de 2 segundos para dar tiempo a ver el mensaje
     setTimeout(() => {
       router.push(`/dashboard/licencias/imprimir?role=${role}`)
     }, 2000)
@@ -159,7 +243,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
 
   return (
     <Card className="w-full dark:border-slate-700">
-      <CardContent className="pt-6">
+      <CardContent className="pt-6" ref={formRef}>
         {success ? (
           <Alert className="bg-green-50 border-green-200 mb-4 dark:bg-green-900 dark:border-green-800">
             <CheckCircle2 className="h-4 w-4 text-green-600 dark:text-green-400" />
@@ -169,7 +253,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
           </Alert>
         ) : (
           <div className="space-y-6">
-            <div className="space-y-4">
+            <div className="space-y-4" ref={busquedaRef}>
               <h2 className="text-xl font-semibold dark:text-white">Buscar Titular</h2>
 
               {error && (
@@ -182,7 +266,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <Label htmlFor="tipoDocumento">Tipo de Documento</Label>
-                  <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                  <Select value={tipoDocumento} onValueChange={handleTipoDocumentoChange}>
                     <SelectTrigger id="tipoDocumento">
                       <SelectValue placeholder="Seleccionar" />
                     </SelectTrigger>
@@ -198,8 +282,9 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
                   <Input
                     id="numeroDocumento"
                     value={numeroDocumento}
-                    onChange={(e) => setNumeroDocumento(e.target.value)}
+                    onChange={handleNumeroDocumentoChange}
                     placeholder="Ingrese número"
+                    maxLength={tipoDocumento === "DNI" ? 8 : 9}
                   />
                 </div>
 
@@ -216,7 +301,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
               <>
                 <Separator className="dark:bg-slate-700" />
 
-                <div className="space-y-4">
+                <div className="space-y-4" ref={datosRef}>
                   <h2 className="text-xl font-semibold dark:text-white">Datos del Titular</h2>
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -247,7 +332,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
 
                   <Separator className="dark:bg-slate-700" />
 
-                  <div className="space-y-4">
+                  <div className="space-y-4" ref={emitirRef}>
                     <h2 className="text-xl font-semibold dark:text-white">Emitir Licencia</h2>
 
                     {errorEdad && (
@@ -258,13 +343,12 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
                     )}
 
                     <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div>
+                      <div className="animate-item">
                         <Label htmlFor="claseLicencia">Clase de Licencia</Label>
                         <Select
                           value={claseLicencia}
                           onValueChange={(value) => {
                             setClaseLicencia(value)
-                            // Usar useEffect para manejar los cambios de claseLicencia en lugar de setTimeout
                           }}
                         >
                           <SelectTrigger id="claseLicencia">
@@ -279,12 +363,12 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
 
                       {claseLicencia && !errorEdad && (
                         <div className="col-span-2 grid grid-cols-2 gap-4">
-                          <div>
+                          <div className="animate-item">
                             <Label>Vigencia</Label>
                             <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-md">{vigencia} años</div>
                           </div>
 
-                          <div>
+                          <div className="animate-item">
                             <Label>Costo</Label>
                             <div className="p-2 bg-slate-100 dark:bg-slate-800 rounded-md">${costo}</div>
                           </div>

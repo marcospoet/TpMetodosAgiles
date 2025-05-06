@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { licenciasEmitidas } from "@/data/licencia-data" // Importar desde el archivo compartido
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import gsap from "gsap"
 
 interface ImprimirLicenciaFormProps {
   role: string
@@ -43,6 +44,44 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const formContainerRef = useRef<HTMLDivElement>(null)
+  const searchFormRef = useRef<HTMLDivElement>(null)
+  const licenciaPreviewRef = useRef<HTMLDivElement>(null)
+  const fotoSectionRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Animación inicial del formulario
+    if (formContainerRef.current) {
+      gsap.fromTo(
+        formContainerRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+      )
+    }
+  }, [])
+
+  // Manejar cambio en el tipo de documento
+  const handleTipoDocumentoChange = (value: string) => {
+    setTipoDocumento(value)
+    setNumeroDocumento("") // Limpiar el campo al cambiar el tipo
+  }
+
+  // Manejar cambio en el número de documento
+  const handleNumeroDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+
+    if (tipoDocumento === "DNI") {
+      // Para DNI, solo permitir números
+      const onlyNumbers = value.replace(/[^0-9]/g, "")
+      setNumeroDocumento(onlyNumbers)
+    } else if (tipoDocumento === "Pasaporte") {
+      // Para Pasaporte, convertir a mayúsculas
+      setNumeroDocumento(value.toUpperCase())
+    } else {
+      // Si no hay tipo seleccionado, permitir cualquier entrada
+      setNumeroDocumento(value)
+    }
+  }
 
   // Función para buscar licencias
   const buscarLicencia = () => {
@@ -53,6 +92,10 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
 
     if (!tipoDocumento || !numeroDocumento) {
       setErrorBusqueda("Debe completar tipo y número de documento")
+      // Animación de error
+      if (searchFormRef.current) {
+        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
     }
 
@@ -64,21 +107,68 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
 
     if (resultados.length === 0) {
       setErrorBusqueda("No se encontraron licencias con ese documento")
+      // Animación de error
+      if (searchFormRef.current) {
+        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
+    }
+
+    // Animación de éxito en la búsqueda
+    if (searchFormRef.current) {
+      gsap.to(searchFormRef.current.querySelectorAll("input, select, button"), {
+        scale: 1.03,
+        duration: 0.2,
+        stagger: 0.05,
+        yoyo: true,
+        repeat: 1,
+      })
     }
 
     setResultadosBusqueda(resultados)
 
     // Si solo hay un resultado, seleccionarlo automáticamente
     if (resultados.length === 1) {
-      setLicenciaSeleccionada(resultados[0])
+      seleccionarLicencia(resultados[0])
     }
   }
 
   // Función para seleccionar una licencia
   const seleccionarLicencia = (licencia: (typeof licenciasEmitidas)[0]) => {
-    setLicenciaSeleccionada(licencia)
-    setFotoTitular(null) // Resetear la foto al cambiar de licencia
+    // Animación de transición
+    if (searchFormRef.current) {
+      gsap.to(searchFormRef.current, {
+        y: -10,
+        opacity: 0,
+        duration: 0.3,
+        onComplete: () => {
+          setLicenciaSeleccionada(licencia)
+          setFotoTitular(null) // Resetear la foto al cambiar de licencia
+
+          // Animar la aparición de la previsualización
+          setTimeout(() => {
+            if (licenciaPreviewRef.current) {
+              gsap.fromTo(
+                licenciaPreviewRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" },
+              )
+            }
+
+            if (fotoSectionRef.current) {
+              gsap.fromTo(
+                fotoSectionRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, delay: 0.2, ease: "back.out(1.2)" },
+              )
+            }
+          }, 100)
+        },
+      })
+    } else {
+      setLicenciaSeleccionada(licencia)
+      setFotoTitular(null) // Resetear la foto al cambiar de licencia
+    }
   }
 
   // Iniciar/detener la cámara
@@ -212,7 +302,34 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
       return
     }
 
-    setGenerandoPDF(true)
+    // Animación al generar PDF
+    if (activeTab === "licencia" && licenciaRef.current) {
+      gsap.to(licenciaRef.current, {
+        scale: 0.98,
+        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          setGenerandoPDF(true)
+          // Continuar con la generación del PDF
+        },
+      })
+    } else if (activeTab === "comprobante" && comprobanteRef.current) {
+      gsap.to(comprobanteRef.current, {
+        scale: 0.98,
+        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          setGenerandoPDF(true)
+          // Continuar con la generación del PDF
+        },
+      })
+    } else {
+      setGenerandoPDF(true)
+    }
 
     try {
       // Crear un nuevo documento PDF
@@ -575,7 +692,7 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
 
   return (
     <Card className="w-full dark:border-slate-700">
-      <CardContent className="pt-6">
+      <CardContent className="pt-6" ref={formContainerRef}>
         <Tabs defaultValue="licencia" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="licencia" className="transition-all duration-300">
@@ -590,7 +707,10 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
             <div className="space-y-6">
               {/* Buscador de licencias */}
               {!licenciaSeleccionada ? (
-                <div className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                <div
+                  className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                  ref={searchFormRef}
+                >
                   <h3 className="text-lg font-medium mb-4 dark:text-white">Buscar Licencia</h3>
 
                   {errorBusqueda && (
@@ -601,7 +721,7 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                      <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                      <Select value={tipoDocumento} onValueChange={handleTipoDocumentoChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Tipo de Documento" />
                         </SelectTrigger>
@@ -616,7 +736,8 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={(e) => setNumeroDocumento(e.target.value)}
+                        onChange={handleNumeroDocumentoChange}
+                        maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
 
@@ -663,7 +784,10 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
                 <>
                   {/* Sección para cargar/tomar foto */}
                   {!tomarFoto ? (
-                    <div className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                    <div
+                      className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                      ref={fotoSectionRef}
+                    >
                       <div className="flex justify-between items-center mb-4">
                         <h3 className="text-lg font-medium dark:text-white">Foto del Titular</h3>
                         <Button
@@ -817,7 +941,11 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
                   )}
 
                   {/* Previsualización de la licencia */}
-                  <div ref={licenciaRef} className="border rounded-lg overflow-hidden dark:border-slate-700">
+                  <div
+                    ref={licenciaRef}
+                    className="border rounded-lg overflow-hidden dark:border-slate-700"
+                    ref={licenciaPreviewRef}
+                  >
                     <div className="bg-slate-800 text-white p-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -962,7 +1090,7 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
 
                   <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                     <div>
-                      <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                      <Select value={tipoDocumento} onValueChange={handleTipoDocumentoChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Tipo de Documento" />
                         </SelectTrigger>
@@ -977,7 +1105,8 @@ export default function ImprimirLicenciaForm({ role }: ImprimirLicenciaFormProps
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={(e) => setNumeroDocumento(e.target.value)}
+                        onChange={handleNumeroDocumentoChange}
+                        maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
 

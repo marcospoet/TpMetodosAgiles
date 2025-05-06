@@ -2,7 +2,7 @@
 
 import type React from "react"
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Card, CardContent } from "@/components/ui/card"
@@ -15,6 +15,7 @@ import { useIsMobile } from "@/hooks/use-mobile"
 import { licenciasEmitidas } from "@/data/licencia-data" // Importar desde el archivo compartido
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 import { Alert, AlertDescription } from "@/components/ui/alert"
+import gsap from "gsap"
 
 interface ImprimirLicenciaFormProps {
   role: string
@@ -38,6 +39,44 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
   const licenciaRef = useRef<HTMLDivElement>(null)
   const comprobanteRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const formContainerRef = useRef<HTMLDivElement>(null)
+  const searchFormRef = useRef<HTMLDivElement>(null)
+  const licenciaPreviewRef = useRef<HTMLDivElement>(null)
+  const fotoSectionRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    // Animación inicial del formulario
+    if (formContainerRef.current) {
+      gsap.fromTo(
+        formContainerRef.current,
+        { opacity: 0, y: 20 },
+        { opacity: 1, y: 0, duration: 0.6, ease: "power2.out" },
+      )
+    }
+  }, [])
+
+  // Manejar cambio en el tipo de documento
+  const handleTipoDocumentoChange = (value: string) => {
+    setTipoDocumento(value)
+    setNumeroDocumento("") // Limpiar el campo al cambiar el tipo
+  }
+
+  // Manejar cambio en el número de documento
+  const handleNumeroDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value
+
+    if (tipoDocumento === "DNI") {
+      // Para DNI, solo permitir números
+      const onlyNumbers = value.replace(/[^0-9]/g, "")
+      setNumeroDocumento(onlyNumbers)
+    } else if (tipoDocumento === "Pasaporte") {
+      // Para Pasaporte, convertir a mayúsculas
+      setNumeroDocumento(value.toUpperCase())
+    } else {
+      // Si no hay tipo seleccionado, permitir cualquier entrada
+      setNumeroDocumento(value)
+    }
+  }
 
   // Función para buscar licencias
   const buscarLicencia = () => {
@@ -48,6 +87,10 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
 
     if (!tipoDocumento || !numeroDocumento) {
       setErrorBusqueda("Debe completar tipo y número de documento")
+      // Animación de error
+      if (searchFormRef.current) {
+        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
     }
 
@@ -59,21 +102,68 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
 
     if (resultados.length === 0) {
       setErrorBusqueda("No se encontraron licencias con ese documento")
+      // Animación de error
+      if (searchFormRef.current) {
+        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      }
       return
+    }
+
+    // Animación de éxito en la búsqueda
+    if (searchFormRef.current) {
+      gsap.to(searchFormRef.current.querySelectorAll("input, select, button"), {
+        scale: 1.03,
+        duration: 0.2,
+        stagger: 0.05,
+        yoyo: true,
+        repeat: 1,
+      })
     }
 
     setResultadosBusqueda(resultados)
 
     // Si solo hay un resultado, seleccionarlo automáticamente
     if (resultados.length === 1) {
-      setLicenciaSeleccionada(resultados[0])
+      seleccionarLicencia(resultados[0])
     }
   }
 
   // Función para seleccionar una licencia
   const seleccionarLicencia = (licencia: (typeof licenciasEmitidas)[0]) => {
-    setLicenciaSeleccionada(licencia)
-    setFotoTitular(null) // Resetear la foto al cambiar de licencia
+    // Animación de transición
+    if (searchFormRef.current) {
+      gsap.to(searchFormRef.current, {
+        y: -10,
+        opacity: 0,
+        duration: 0.3,
+        onComplete: () => {
+          setLicenciaSeleccionada(licencia)
+          setFotoTitular(null) // Resetear la foto al cambiar de licencia
+
+          // Animar la aparición de la previsualización
+          setTimeout(() => {
+            if (licenciaPreviewRef.current) {
+              gsap.fromTo(
+                licenciaPreviewRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" },
+              )
+            }
+
+            if (fotoSectionRef.current) {
+              gsap.fromTo(
+                fotoSectionRef.current,
+                { opacity: 0, y: 20 },
+                { opacity: 1, y: 0, duration: 0.5, delay: 0.2, ease: "back.out(1.2)" },
+              )
+            }
+          }, 100)
+        },
+      })
+    } else {
+      setLicenciaSeleccionada(licencia)
+      setFotoTitular(null) // Resetear la foto al cambiar de licencia
+    }
   }
 
   // Reemplazar la función tomarFoto actual con esta implementación
@@ -200,7 +290,34 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
       return
     }
 
-    setGenerandoPDF(true)
+    // Animación al generar PDF
+    if (activeTab === "licencia" && licenciaRef.current) {
+      gsap.to(licenciaRef.current, {
+        scale: 0.98,
+        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          setGenerandoPDF(true)
+          // Continuar con la generación del PDF
+        },
+      })
+    } else if (activeTab === "comprobante" && comprobanteRef.current) {
+      gsap.to(comprobanteRef.current, {
+        scale: 0.98,
+        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
+        duration: 0.3,
+        yoyo: true,
+        repeat: 1,
+        onComplete: () => {
+          setGenerandoPDF(true)
+          // Continuar con la generación del PDF
+        },
+      })
+    } else {
+      setGenerandoPDF(true)
+    }
 
     try {
       console.log("Generando PDF...")
@@ -568,7 +685,7 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
 
   return (
     <Card className="w-full dark:border-slate-700">
-      <CardContent className="pt-6">
+      <CardContent className="pt-6" ref={formContainerRef}>
         <Tabs defaultValue="licencia" value={activeTab} onValueChange={setActiveTab}>
           <TabsList className="grid w-full grid-cols-2">
             <TabsTrigger value="licencia" className="transition-all duration-300">
@@ -583,7 +700,10 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
             <div className="space-y-6">
               {/* Buscador de licencias - Versión móvil */}
               {!licenciaSeleccionada ? (
-                <div className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                <div
+                  className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                  ref={searchFormRef}
+                >
                   <h3 className="text-lg font-medium mb-4 dark:text-white">Buscar Licencia</h3>
 
                   {errorBusqueda && (
@@ -594,7 +714,7 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
 
                   <div className="space-y-4 mb-4">
                     <div>
-                      <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                      <Select value={tipoDocumento} onValueChange={handleTipoDocumentoChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Tipo de Documento" />
                         </SelectTrigger>
@@ -609,7 +729,8 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={(e) => setNumeroDocumento(e.target.value)}
+                        onChange={handleNumeroDocumentoChange}
+                        maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
 
@@ -650,7 +771,10 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
               ) : (
                 <>
                   {/* Sección para cargar/tomar foto - Versión simplificada para móviles */}
-                  <div className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                  <div
+                    className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                    ref={fotoSectionRef}
+                  >
                     <div className="flex justify-between items-center mb-4">
                       <h3 className="text-lg font-medium dark:text-white">Foto del Titular</h3>
                       <Button
@@ -739,7 +863,11 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                   </div>
 
                   {/* Previsualización de la licencia con slider para móviles */}
-                  <div className="border rounded-lg overflow-hidden dark:border-slate-700">
+                  <div
+                    ref={licenciaRef}
+                    className="border rounded-lg overflow-hidden dark:border-slate-700"
+                    ref={licenciaPreviewRef}
+                  >
                     <div className="bg-slate-800 text-white p-4">
                       <div className="flex justify-between items-center">
                         <div className="flex items-center gap-3">
@@ -892,7 +1020,7 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
 
                   <div className="space-y-4 mb-4">
                     <div>
-                      <Select value={tipoDocumento} onValueChange={setTipoDocumento}>
+                      <Select value={tipoDocumento} onValueChange={handleTipoDocumentoChange}>
                         <SelectTrigger>
                           <SelectValue placeholder="Tipo de Documento" />
                         </SelectTrigger>
@@ -907,7 +1035,8 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={(e) => setNumeroDocumento(e.target.value)}
+                        onChange={handleNumeroDocumentoChange}
+                        maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
 
@@ -935,8 +1064,8 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                                 </p>
                               </div>
                               <div className="text-right">
-                                <p className="text-sm dark:text-white">Recibo N° R-{licencia.numeroLicencia}</p>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">${licencia.costo}</p>
+                                <p className="text-sm dark:text-white">Clase {licencia.claseLicencia}</p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">{licencia.numeroLicencia}</p>
                               </div>
                             </div>
                           </div>
@@ -946,112 +1075,25 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                   )}
                 </div>
               ) : (
-                <div ref={comprobanteRef} className="border rounded-lg overflow-hidden dark:border-slate-700">
-                  <div className="bg-slate-100 dark:bg-slate-800 p-4 border-b dark:border-slate-700">
+                <div
+                  className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                  ref={comprobanteRef}
+                >
+                  <h3 className="text-lg font-medium mb-4 dark:text-white">Comprobante de Pago</h3>
+                  <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-md">
                     <div className="flex justify-between items-center">
-                      <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                          <Image
-                            src="/images/logo-auto.png"
-                            alt="Logo Municipal"
-                            width={40}
-                            height={40}
-                            className="rounded-full object-contain"
-                          />
-                        </div>
-                        <div>
-                          <h3 className="font-bold dark:text-white">MUNICIPALIDAD</h3>
-                          <p className="text-xs dark:text-slate-300">COMPROBANTE DE PAGO</p>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <p className="text-sm dark:text-white">RECIBO N° R-{licenciaSeleccionada.numeroLicencia}</p>
-                        <p className="text-xs dark:text-slate-300">
-                          FECHA: {new Date(licenciaSeleccionada.fechaEmision).toLocaleDateString("es-ES")}
+                      <div>
+                        <p className="font-medium dark:text-white">{licenciaSeleccionada.titular.nombreApellido}</p>
+                        <p className="text-sm text-slate-500 dark:text-slate-400">
+                          {licenciaSeleccionada.titular.tipoDocumento} {licenciaSeleccionada.titular.numeroDocumento}
                         </p>
                       </div>
-                    </div>
-                  </div>
-
-                  {/* Contenedor con scroll para móviles */}
-                  <div className="relative">
-                    <div className="max-h-[400px] overflow-y-auto p-6 dark:bg-slate-800 scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 dark:scrollbar-thumb-slate-600 dark:scrollbar-track-slate-800">
-                      <div className="space-y-6">
-                        <div className="flex justify-between items-center">
-                          <h3 className="font-semibold dark:text-white">DATOS DEL TITULAR</h3>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => {
-                              setLicenciaSeleccionada(null)
-                              setBusquedaRealizada(false)
-                            }}
-                          >
-                            Cambiar
-                          </Button>
-                        </div>
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                          <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">APELLIDO Y NOMBRE</p>
-                            <p className="dark:text-white">{licenciaSeleccionada.titular.nombreApellido}</p>
-                          </div>
-
-                          <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">DOCUMENTO</p>
-                            <p className="dark:text-white">
-                              {licenciaSeleccionada.titular.tipoDocumento}{" "}
-                              {licenciaSeleccionada.titular.numeroDocumento}
-                            </p>
-                          </div>
-                        </div>
-
-                        <div>
-                          <h3 className="font-semibold mb-2 dark:text-white">DETALLE DE PAGO</h3>
-                          <div className="border rounded-md overflow-hidden dark:border-slate-700">
-                            <table className="w-full">
-                              <thead className="bg-slate-100 dark:bg-slate-700">
-                                <tr>
-                                  <th className="text-left p-2 dark:text-white">Concepto</th>
-                                  <th className="text-right p-2 dark:text-white">Importe</th>
-                                </tr>
-                              </thead>
-                              <tbody>
-                                <tr className="border-t dark:border-slate-700">
-                                  <td className="p-2 dark:text-white">
-                                    <p>Emisión de Licencia Clase {licenciaSeleccionada.claseLicencia}</p>
-                                    <p className="text-xs text-slate-500 dark:text-slate-400">
-                                      Vigencia: {licenciaSeleccionada.vigencia} años
-                                    </p>
-                                  </td>
-                                  <td className="p-2 text-right dark:text-white">${licenciaSeleccionada.costo}</td>
-                                </tr>
-                                <tr className="border-t bg-slate-50 dark:bg-slate-700 dark:border-slate-600">
-                                  <td className="p-2 font-semibold dark:text-white">TOTAL</td>
-                                  <td className="p-2 text-right font-semibold dark:text-white">
-                                    ${licenciaSeleccionada.costo}
-                                  </td>
-                                </tr>
-                              </tbody>
-                            </table>
-                          </div>
-                        </div>
-
-                        <div className="border-t pt-4 flex justify-between dark:border-slate-700">
-                          <div>
-                            <p className="text-xs text-slate-500 dark:text-slate-400">OPERADOR</p>
-                            <p className="dark:text-white">Admin Sistema</p>
-                          </div>
-                          <div className="text-right">
-                            <p className="text-xs text-slate-500 dark:text-slate-400">FECHA Y HORA</p>
-                            <p className="dark:text-white">{new Date().toLocaleString("es-ES")}</p>
-                          </div>
-                        </div>
+                      <div className="text-right">
+                        <p className="text-sm dark:text-white">N° {licenciaSeleccionada.numeroLicencia}</p>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">
+                          Clase {licenciaSeleccionada.claseLicencia}
+                        </p>
                       </div>
-                    </div>
-
-                    {/* Indicador de scroll */}
-                    <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none">
-                      <div className="h-1 w-16 bg-slate-300 dark:bg-slate-600 rounded-full opacity-70"></div>
                     </div>
                   </div>
                 </div>

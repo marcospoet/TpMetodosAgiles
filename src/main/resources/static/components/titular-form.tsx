@@ -16,16 +16,45 @@ import { useForm } from "react-hook-form"
 import * as z from "zod"
 import gsap from "gsap"
 
-const formSchema = z.object({
+// Esquema base para todos los campos excepto numeroDocumento
+const baseSchema = {
   tipoDocumento: z.string().min(1, "Seleccione un tipo de documento"),
-  numeroDocumento: z.string().min(1, "Ingrese un número de documento").regex(/^\d+$/, "Solo se permiten números"),
   nombreApellido: z.string().min(3, "Ingrese nombre y apellido completos"),
-  fechaNacimiento: z.string().min(1, "Seleccione una fecha de nacimiento"),
+  fechaNacimiento: z
+    .string()
+    .min(1, "Seleccione una fecha de nacimiento")
+    .refine(
+      (value) => {
+        const fechaNacimiento = new Date(value)
+        const hoy = new Date()
+
+        // Calcular edad
+        let edad = hoy.getFullYear() - fechaNacimiento.getFullYear()
+        const m = hoy.getMonth() - fechaNacimiento.getMonth()
+
+        // Ajustar edad si aún no ha cumplido años en este año
+        if (m < 0 || (m === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+          edad--
+        }
+
+        return edad >= 18
+      },
+      {
+        message: "El titular debe tener al menos 18 años",
+      },
+    ),
   direccion: z.string().min(5, "Ingrese una dirección válida"),
   claseSolicitada: z.string().min(1, "Seleccione una clase"),
   grupoSanguineo: z.string().min(1, "Seleccione un grupo sanguíneo"),
   factorRh: z.string().min(1, "Seleccione un factor RH"),
   donanteOrganos: z.string().min(1, "Seleccione si es donante de órganos"),
+}
+
+// Esquema completo que maneja la validación de numeroDocumento sin depender de ctx
+const formSchema = z.object({
+  ...baseSchema,
+  // Validación simple para numeroDocumento sin depender de ctx
+  numeroDocumento: z.string().min(1, "Ingrese un número de documento"),
 })
 
 interface TitularFormProps {
@@ -37,6 +66,7 @@ export default function TitularForm({ role }: TitularFormProps) {
   const [success, setSuccess] = useState(false)
   const formFieldsRef = useRef<HTMLDivElement>(null)
   const buttonsRef = useRef<HTMLDivElement>(null)
+  const [tipoDocumento, setTipoDocumento] = useState<string>("")
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -52,6 +82,31 @@ export default function TitularForm({ role }: TitularFormProps) {
       donanteOrganos: "",
     },
   })
+
+  // Manejar la validación del número de documento basado en el tipo seleccionado
+  const validateNumeroDocumento = (value: string) => {
+    if (tipoDocumento === "DNI" && !/^\d+$/.test(value)) {
+      form.setError("numeroDocumento", {
+        type: "manual",
+        message: "Para DNI solo se permiten números",
+      })
+      return false
+    }
+    return true
+  }
+
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      if (name === "tipoDocumento") {
+        setTipoDocumento(value.tipoDocumento || "")
+        // Limpiar el campo de número de documento al cambiar el tipo
+        form.setValue("numeroDocumento", "")
+        form.clearErrors("numeroDocumento")
+      }
+    })
+
+    return () => subscription.unsubscribe()
+  }, [form])
 
   useEffect(() => {
     // Animación de los campos del formulario
@@ -87,6 +142,11 @@ export default function TitularForm({ role }: TitularFormProps) {
   }, [])
 
   const onSubmit = (values: z.infer<typeof formSchema>) => {
+    // Validar manualmente el número de documento
+    if (!validateNumeroDocumento(values.numeroDocumento)) {
+      return
+    }
+
     // En producción, aquí se enviarían los datos al backend
     console.log(values)
 
@@ -143,7 +203,35 @@ export default function TitularForm({ role }: TitularFormProps) {
                       <FormItem>
                         <FormLabel>Número de Documento *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Ingrese solo números" {...field} />
+                          <Input
+                            placeholder={tipoDocumento === "DNI" ? "Ingrese solo números" : "Ingrese números y letras"}
+                            maxLength={tipoDocumento === "DNI" ? 8 : 9}
+                            {...field}
+                            onChange={(e) => {
+                              let value = e.target.value
+
+                              // Si es DNI, filtrar caracteres no numéricos
+                              if (tipoDocumento === "DNI") {
+                                value = value.replace(/\D/g, "")
+                              }
+
+                              // Si es pasaporte, convertir a mayúsculas
+                              if (tipoDocumento === "Pasaporte") {
+                                value = value.toUpperCase()
+                              }
+
+                              // Actualizar el campo con el valor procesado
+                              e.target.value = value
+                              field.onChange(e)
+
+                              // Validar después de cambiar
+                              validateNumeroDocumento(value)
+                            }}
+                            onBlur={(e) => {
+                              field.onBlur()
+                              validateNumeroDocumento(e.target.value)
+                            }}
+                          />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
@@ -158,7 +246,7 @@ export default function TitularForm({ role }: TitularFormProps) {
                     <FormItem>
                       <FormLabel>Nombre y Apellido *</FormLabel>
                       <FormControl>
-                        <Input placeholder="Nombre y apellido completos" {...field} />
+                        <Input placeholder="Nombre y apellido completos" maxLength={50} {...field} />
                       </FormControl>
                       <FormMessage />
                     </FormItem>
@@ -187,7 +275,7 @@ export default function TitularForm({ role }: TitularFormProps) {
                       <FormItem>
                         <FormLabel>Dirección *</FormLabel>
                         <FormControl>
-                          <Input placeholder="Dirección completa" {...field} />
+                          <Input placeholder="Dirección completa" maxLength={100} {...field} />
                         </FormControl>
                         <FormMessage />
                       </FormItem>
