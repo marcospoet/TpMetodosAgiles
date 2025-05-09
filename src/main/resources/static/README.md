@@ -7,6 +7,7 @@ Para instalar las dependencias del proyecto, ejecuta:
 ```bash
 npm run install:deps
 ```
+
 O simplemente:
 
 ```bash
