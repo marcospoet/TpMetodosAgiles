@@ -36,6 +36,32 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
   const [errorBusqueda, setErrorBusqueda] = useState<string>("")
   const [busquedaRealizada, setBusquedaRealizada] = useState(false)
 
+  // Función de utilidad para animar elementos con error
+  const animateErrorField = (element: HTMLElement | null) => {
+    if (!element) return
+
+    // Guardar el borde original
+    const originalBorder = element.style.border
+
+    // Animar el borde y el fondo
+    gsap
+      .timeline()
+      .to(element, {
+        backgroundColor: "rgba(239, 68, 68, 0.1)",
+        border: "1px solid rgba(239, 68, 68, 0.5)",
+        duration: 0.3,
+      })
+      .to(element, {
+        backgroundColor: "",
+        border: originalBorder,
+        duration: 0.3,
+        delay: 0.2,
+      })
+
+    // Animar el shake
+    gsap.fromTo(element, { x: -5 }, { x: 5, duration: 0.1, repeat: 4, yoyo: true })
+  }
+
   const licenciaRef = useRef<HTMLDivElement>(null)
   const comprobanteRef = useRef<HTMLDivElement>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
@@ -43,6 +69,9 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
   const searchFormRef = useRef<HTMLDivElement>(null)
   const licenciaPreviewRef = useRef<HTMLDivElement>(null)
   const fotoSectionRef = useRef<HTMLDivElement>(null)
+  const licenciaFrenteRef = useRef<HTMLDivElement>(null)
+  const licenciaDorsoRef = useRef<HTMLDivElement>(null)
+  const comprobanteSearchFormRef = useRef<HTMLDivElement>(null)
 
   useEffect(() => {
     // Animación inicial del formulario
@@ -85,11 +114,49 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
     setLicenciaSeleccionada(null)
     setBusquedaRealizada(true)
 
+    // Determinar qué referencia usar según la pestaña activa
+    const currentFormRef = activeTab === "licencia" ? searchFormRef : comprobanteSearchFormRef
+
     if (!tipoDocumento || !numeroDocumento) {
       setErrorBusqueda("Debe completar tipo y número de documento")
       // Animación de error
-      if (searchFormRef.current) {
-        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      if (currentFormRef.current) {
+        // Animación de error más notoria para móviles
+        gsap.fromTo(
+          currentFormRef.current,
+          { x: -10 },
+          { x: 10, duration: 0.1, repeat: 5, yoyo: true, ease: "power2.inOut" },
+        )
+
+        // Resaltar los campos con error
+        const inputField = currentFormRef.current.querySelector("input")
+        const selectField = currentFormRef.current.querySelector("[data-value]")
+
+        if (!tipoDocumento && selectField) {
+          gsap.fromTo(
+            selectField,
+            { boxShadow: "0 0 0 1px rgba(239, 68, 68, 0.2)" },
+            {
+              boxShadow: "0 0 0 2px rgba(239, 68, 68, 1)",
+              duration: 0.3,
+              repeat: 1,
+              yoyo: true,
+            },
+          )
+        }
+
+        if (!numeroDocumento && inputField) {
+          gsap.fromTo(
+            inputField,
+            { boxShadow: "0 0 0 1px rgba(239, 68, 68, 0.2)" },
+            {
+              boxShadow: "0 0 0 2px rgba(239, 68, 68, 1)",
+              duration: 0.3,
+              repeat: 1,
+              yoyo: true,
+            },
+          )
+        }
       }
       return
     }
@@ -103,15 +170,37 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
     if (resultados.length === 0) {
       setErrorBusqueda("No se encontraron licencias con ese documento")
       // Animación de error
-      if (searchFormRef.current) {
-        gsap.fromTo(searchFormRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+      if (currentFormRef.current) {
+        // Animación de error más notoria para móviles
+        gsap.fromTo(
+          currentFormRef.current,
+          { x: -10 },
+          { x: 10, duration: 0.1, repeat: 5, yoyo: true, ease: "power2.inOut" },
+        )
+
+        // Animar el mensaje de error para que sea más visible
+        setTimeout(() => {
+          const errorAlert = currentFormRef.current?.querySelector('[role="alert"]')
+          if (errorAlert) {
+            gsap.fromTo(
+              errorAlert,
+              { scale: 0.95, opacity: 0.8 },
+              {
+                scale: 1,
+                opacity: 1,
+                duration: 0.3,
+                ease: "back.out(1.7)",
+              },
+            )
+          }
+        }, 100)
       }
       return
     }
 
     // Animación de éxito en la búsqueda
-    if (searchFormRef.current) {
-      gsap.to(searchFormRef.current.querySelectorAll("input, select, button"), {
+    if (currentFormRef.current) {
+      gsap.to(currentFormRef.current.querySelectorAll("input, select, button"), {
         scale: 1.03,
         duration: 0.2,
         stagger: 0.05,
@@ -240,25 +329,31 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
     if (file) {
       console.log("Archivo seleccionado:", file.name, file.type)
 
+      // Verificar el tipo de archivo
+      if (!file.type.startsWith("image/")) {
+        console.error("El archivo seleccionado no es una imagen")
+        return
+      }
+
+      // Verificar el tamaño del archivo (máximo 5MB)
+      if (file.size > 5 * 1024 * 1024) {
+        console.error("La imagen es demasiado grande (máximo 5MB)")
+        return
+      }
+
       const reader = new FileReader()
 
       // Usar function() en lugar de arrow function para evitar problemas con 'this'
       reader.onload = (event) => {
         if (event && event.target && event.target.result) {
           console.log("Imagen cargada correctamente")
-          const imageDataUrl = event.target.result as string
-
-          // Normalizar la orientación de la imagen antes de guardarla
-          normalizarOrientacionImagen(imageDataUrl)
-            .then((imagenNormalizada) => {
-              setFotoTitular(imagenNormalizada)
-              console.log("Imagen normalizada y guardada en estado")
-            })
-            .catch((error) => {
-              console.error("Error al normalizar la imagen:", error)
-              // Si hay un error en la normalización, usar la imagen original
-              setFotoTitular(imageDataUrl)
-            })
+          try {
+            const imageDataUrl = event.target.result as string
+            setFotoTitular(imageDataUrl)
+            console.log("Imagen guardada en estado")
+          } catch (error) {
+            console.error("Error al procesar la imagen:", error)
+          }
         } else {
           console.error("No se pudo cargar la imagen (event.target.result es undefined)")
         }
@@ -268,7 +363,11 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
         console.error("Error al leer el archivo:", error)
       }
 
-      reader.readAsDataURL(file)
+      try {
+        reader.readAsDataURL(file)
+      } catch (error) {
+        console.error("Error al leer el archivo como URL de datos:", error)
+      }
     }
   }
 
@@ -290,391 +389,183 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
       return
     }
 
-    // Animación al generar PDF
-    if (activeTab === "licencia" && licenciaRef.current) {
-      gsap.to(licenciaRef.current, {
-        scale: 0.98,
-        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
-        duration: 0.3,
-        yoyo: true,
-        repeat: 1,
-        onComplete: () => {
-          setGenerandoPDF(true)
-          // Continuar con la generación del PDF
-        },
-      })
-    } else if (activeTab === "comprobante" && comprobanteRef.current) {
-      gsap.to(comprobanteRef.current, {
-        scale: 0.98,
-        boxShadow: "0 0 15px rgba(59, 130, 246, 0.5)",
-        duration: 0.3,
-        yoyo: true,
-        repeat: 1,
-        onComplete: () => {
-          setGenerandoPDF(true)
-          // Continuar con la generación del PDF
-        },
-      })
-    } else {
-      setGenerandoPDF(true)
-    }
+    setGenerandoPDF(true)
 
     try {
-      console.log("Generando PDF...")
-      // Crear un nuevo documento PDF - Siempre usar orientación vertical para mejor compatibilidad móvil
+      // Importar html2canvas dinámicamente solo para la licencia
+      const html2canvas = (await import("html2canvas")).default
+
+      // Crear un nuevo documento PDF
       const pdf = new jsPDF({
-        orientation: "portrait",
+        orientation: "portrait", // Siempre usar orientación vertical
         unit: "mm",
         format: "a4",
       })
 
-      // Obtener dimensiones de la página
-      const pageWidth = pdf.internal.pageSize.getWidth()
-      const pageHeight = pdf.internal.pageSize.getHeight()
-
-      // Definir márgenes
-      const margin = 10
-      const contentWidth = pageWidth - 2 * margin
-      const contentHeight = pageHeight - 2 * margin
-
-      // Colores
-      const colorPrimario = "#1e293b" // slate-800
-      const colorTexto = "#000000"
-      const colorFondo = "#ffffff"
-      const colorBorde = "#e2e8f0" // slate-200
-
       if (activeTab === "licencia") {
-        // ===== LICENCIA DE CONDUCIR =====
-        // Usar diseño vertical para mejor compatibilidad con móviles
+        // Capturar el anverso de la licencia
+        if (licenciaFrenteRef.current) {
+          const canvasFrente = await html2canvas(licenciaFrenteRef.current, {
+            scale: 3, // Aumentar la escala para mejor calidad
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: "#ffffff", // Fondo blanco explícito
+            logging: true, // Activar logs para depuración
+          })
 
-        // Fondo del encabezado
-        pdf.setFillColor(colorPrimario)
-        pdf.rect(margin, margin, contentWidth, 25, "F")
+          const imgDataFrente = canvasFrente.toDataURL("image/png")
 
-        // Título de la licencia
-        pdf.setTextColor(255, 255, 255) // Texto blanco
-        pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(14)
-        pdf.text("MUNICIPALIDAD", pageWidth / 2, margin + 8, { align: "center" })
-        pdf.setFontSize(12)
-        pdf.text("LICENCIA DE CONDUCIR", pageWidth / 2, margin + 16, { align: "center" })
+          // Capturar el reverso de la licencia
+          if (licenciaDorsoRef.current) {
+            const canvasDorso = await html2canvas(licenciaDorsoRef.current, {
+              scale: 3, // Aumentar la escala para mejor calidad
+              useCORS: true,
+              allowTaint: true,
+              backgroundColor: "#ffffff", // Fondo blanco explícito
+              logging: true, // Activar logs para depuración
+            })
 
-        // Número de licencia y clase
-        pdf.setFontSize(10)
-        pdf.text(`N° ${licenciaSeleccionada.numeroLicencia}`, pageWidth / 2, margin + 24, { align: "center" })
+            const imgDataDorso = canvasDorso.toDataURL("image/png")
 
-        // Contenido principal
-        pdf.setTextColor(colorTexto)
-        pdf.setFont("helvetica", "normal")
-        pdf.setFontSize(10)
+            // Añadir ambas imágenes a una sola página
+            const pdfWidth = pdf.internal.pageSize.getWidth()
+            const pdfHeight = pdf.internal.pageSize.getHeight()
 
-        // Posición inicial del contenido
-        let y = margin + 35
+            // Calcular dimensiones para cada imagen (ajustadas al ancho de la página)
+            const imgWidth = canvasFrente.width
+            const imgHeight = canvasFrente.height
+            const ratio = Math.min((pdfWidth / imgWidth) * 0.9, (pdfHeight / 2 - 20) / imgHeight)
 
-        // Clase de licencia en un recuadro destacado
-        pdf.setFillColor(220, 220, 220)
-        pdf.rect(margin, y, contentWidth, 12, "F")
-        pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(12)
-        pdf.text(`CLASE ${licenciaSeleccionada.claseLicencia}`, pageWidth / 2, y + 8, { align: "center" })
+            // Posicionar el anverso en la parte superior
+            const imgX = (pdfWidth - imgWidth * ratio) / 2
+            const imgY1 = 15 // Margen superior
 
-        y += 20
+            pdf.addImage(imgDataFrente, "PNG", imgX, imgY1, imgWidth * ratio, imgHeight * ratio)
 
-        // Foto del titular - Versión mejorada para móvil (más grande y centrada)
-        if (fotoTitular) {
-          try {
-            console.log("Añadiendo foto al PDF...")
-            // Aumentar el tamaño de la foto y centrarla mejor
-            const fotoWidth = 70 // Más ancho que antes
-            const fotoHeight = 90 // Más alto que antes
+            // Posicionar el reverso en la parte inferior
+            const imgY2 = imgY1 + imgHeight * ratio + 20 // 20px de separación
 
-            // Usar directamente la imagen sin procesamiento adicional
-            pdf.addImage(
-              fotoTitular,
-              "JPEG",
-              pageWidth / 2 - fotoWidth / 2,
-              y,
-              fotoWidth,
-              fotoHeight,
-              undefined,
-              "FAST",
-            )
-            console.log("Foto añadida correctamente al PDF")
-            y += fotoHeight + 10 // Ajustar la posición Y después de la foto
-          } catch (error) {
-            console.error("Error al añadir la imagen al PDF:", error)
-            // Si hay error, mostrar el rectángulo de "SIN FOTO"
-            pdf.setDrawColor(colorBorde)
-            pdf.setFillColor(240, 240, 240)
-            pdf.rect(pageWidth / 2 - 35, y, 70, 90, "FD")
-            pdf.setFontSize(8)
-            pdf.text("SIN FOTO", pageWidth / 2, y + 45, { align: "center" })
-            y += 100 // Ajustar la posición Y
+            pdf.addImage(imgDataDorso, "PNG", imgX, imgY2, imgWidth * ratio, imgHeight * ratio)
           }
-        } else {
-          // Rectángulo para la foto - Más grande
-          pdf.setDrawColor(colorBorde)
-          pdf.setFillColor(240, 240, 240)
-          pdf.rect(pageWidth / 2 - 35, y, 70, 90, "FD")
-          pdf.setFontSize(8)
-          pdf.text("SIN FOTO", pageWidth / 2, y + 45, { align: "center" })
-          y += 100 // Ajustar la posición Y
+
+          // Descargar el PDF
+          const fileName = `Licencia_${licenciaSeleccionada.numeroLicencia}.pdf`
+          pdf.save(fileName)
         }
+      } else if (activeTab === "comprobante") {
+        // Generar un comprobante tipo factura directamente con jsPDF
 
-        // Datos del titular - Centrados en la página
-        const datosWidth = contentWidth - 20
-        const datosX = margin + 10
+        // Configuración de la página
+        const pageWidth = pdf.internal.pageSize.getWidth()
+        const pageHeight = pdf.internal.pageSize.getHeight()
+        const margin = 20
+        const contentWidth = pageWidth - 2 * margin
 
-        // Nombre y apellido
-        pdf.setDrawColor(colorBorde)
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(datosX, y, datosWidth, 12, "FD")
-        pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(10)
-        pdf.text("APELLIDO Y NOMBRE", datosX + 5, y + 8)
-        y += 12
-        pdf.setFont("helvetica", "normal")
-        pdf.text(licenciaSeleccionada.titular.nombreApellido, datosX + 5, y + 8)
-        pdf.line(datosX, y, datosX + datosWidth, y)
-        y += 12
-
-        // Documento y Fecha de nacimiento en la misma línea
-        pdf.setDrawColor(colorBorde)
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(datosX, y, datosWidth / 2 - 5, 12, "FD")
-        pdf.rect(datosX + datosWidth / 2, y, datosWidth / 2, 12, "FD")
-        pdf.setFont("helvetica", "bold")
-        pdf.text("DOCUMENTO", datosX + 5, y + 8)
-        pdf.text("FECHA NACIMIENTO", datosX + datosWidth / 2 + 5, y + 8)
-        y += 12
-        pdf.setFont("helvetica", "normal")
-        pdf.text(
-          `${licenciaSeleccionada.titular.tipoDocumento} ${licenciaSeleccionada.titular.numeroDocumento}`,
-          datosX + 5,
-          y + 8,
-        )
-        pdf.text(
-          new Date(licenciaSeleccionada.titular.fechaNacimiento).toLocaleDateString("es-ES"),
-          datosX + datosWidth / 2 + 5,
-          y + 8,
-        )
-        pdf.line(datosX, y, datosX + datosWidth, y)
-        y += 12
-
-        // Domicilio
-        pdf.setDrawColor(colorBorde)
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(datosX, y, datosWidth, 12, "FD")
-        pdf.setFont("helvetica", "bold")
-        pdf.text("DOMICILIO", datosX + 5, y + 8)
-        y += 12
-        pdf.setFont("helvetica", "normal")
-        pdf.text(licenciaSeleccionada.titular.direccion, datosX + 5, y + 8)
-        pdf.line(datosX, y, datosX + datosWidth, y)
-        y += 12
-
-        // Grupo sanguíneo, donante y vencimiento en la misma línea
-        pdf.setDrawColor(colorBorde)
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(datosX, y, datosWidth / 3 - 5, 12, "FD")
-        pdf.rect(datosX + datosWidth / 3, y, datosWidth / 3 - 5, 12, "FD")
-        pdf.rect(datosX + (2 * datosWidth) / 3, y, datosWidth / 3 + 5, 12, "FD")
-        pdf.setFont("helvetica", "bold")
-        pdf.text("GRUPO SANG.", datosX + 5, y + 8)
-        pdf.text("DONANTE", datosX + datosWidth / 3 + 5, y + 8)
-        pdf.text("VENCIMIENTO", datosX + (2 * datosWidth) / 3 + 5, y + 8)
-        y += 12
-        pdf.setFont("helvetica", "normal")
-        pdf.text(
-          `${licenciaSeleccionada.titular.grupoSanguineo}${licenciaSeleccionada.titular.factorRh}`,
-          datosX + 5,
-          y + 8,
-        )
-        pdf.text(licenciaSeleccionada.titular.donanteOrganos, datosX + datosWidth / 3 + 5, y + 8)
-        pdf.text(
-          new Date(licenciaSeleccionada.fechaVencimiento).toLocaleDateString("es-ES"),
-          datosX + (2 * datosWidth) / 3 + 5,
-          y + 8,
-        )
-
-        // Borde alrededor de toda la licencia
-        pdf.setDrawColor(colorBorde)
-        pdf.rect(margin, margin, contentWidth, y + 15 - margin, "S")
-
-        // Agregar pie de página
-        y += 25
-        pdf.setFontSize(8)
-        pdf.setTextColor(100, 100, 100)
-        pdf.text("DOCUMENTO VÁLIDO COMO LICENCIA DE CONDUCIR", pageWidth / 2, y, { align: "center" })
-        pdf.text(`Emitido el: ${new Date().toLocaleDateString("es-ES")}`, pageWidth / 2, y + 5, { align: "center" })
-      } else {
-        // ===== COMPROBANTE DE PAGO =====
-        // Mejorar diseño para mejor visualización
-
-        // Encabezado
-        pdf.setFillColor(colorPrimario)
+        // Añadir encabezado
+        pdf.setFillColor(240, 240, 240)
         pdf.rect(margin, margin, contentWidth, 25, "F")
+
+        // Logo eliminado por solicitud del usuario
+        //pdf.setFillColor(200, 200, 200)
+        //pdf.rect(margin + 5, margin + 5, 15, 15, "F")
 
         // Título del comprobante
-        pdf.setTextColor(255, 255, 255) // Texto blanco
         pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(14)
-        pdf.text("MUNICIPALIDAD", pageWidth / 2, margin + 8, { align: "center" })
+        pdf.setFontSize(16)
+        pdf.setTextColor(0, 0, 0)
+        pdf.text("MUNICIPALIDAD", margin + 25, margin + 10)
+
         pdf.setFontSize(12)
-        pdf.text("COMPROBANTE DE PAGO", pageWidth / 2, margin + 16, { align: "center" })
+        pdf.text("COMPROBANTE DE PAGO", margin + 25, margin + 18)
 
         // Número de recibo y fecha
+        pdf.setFont("helvetica", "normal")
         pdf.setFontSize(10)
-        pdf.text(`RECIBO N° R-${licenciaSeleccionada.numeroLicencia}`, pageWidth / 2, margin + 24, { align: "center" })
+        pdf.text(`RECIBO N° R-${licenciaSeleccionada.numeroLicencia}`, pageWidth - margin - 60, margin + 10)
+        pdf.text(
+          `FECHA: ${new Date(licenciaSeleccionada.fechaEmision).toLocaleDateString("es-ES")}`,
+          pageWidth - margin - 60,
+          margin + 18,
+        )
 
-        // Posición inicial del contenido
-        let y = margin + 35
+        // Línea separadora
+        pdf.setDrawColor(200, 200, 200)
+        pdf.line(margin, margin + 30, pageWidth - margin, margin + 30)
 
         // Datos del titular
-        pdf.setTextColor(colorTexto)
-        pdf.setFillColor(240, 240, 240)
-        pdf.rect(margin, y, contentWidth, 12, "F")
         pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(11)
-        pdf.text("DATOS DEL TITULAR", margin + 5, y + 8)
+        pdf.setFontSize(12)
+        pdf.text("DATOS DEL TITULAR", margin, margin + 40)
 
-        y += 20
-        pdf.setFont("helvetica", "bold")
+        pdf.setFont("helvetica", "normal")
         pdf.setFontSize(10)
-        pdf.text("APELLIDO Y NOMBRE:", margin + 5, y)
-        pdf.setFont("helvetica", "normal")
-        pdf.text(licenciaSeleccionada.titular.nombreApellido, margin + 60, y)
+        pdf.text("APELLIDO Y NOMBRE:", margin, margin + 50)
+        pdf.text(licenciaSeleccionada.titular.nombreApellido, margin + 50, margin + 50)
 
-        y += 10
-        pdf.setFont("helvetica", "bold")
-        pdf.text("DOCUMENTO:", margin + 5, y)
-        pdf.setFont("helvetica", "normal")
+        pdf.text("DOCUMENTO:", margin, margin + 60)
         pdf.text(
           `${licenciaSeleccionada.titular.tipoDocumento} ${licenciaSeleccionada.titular.numeroDocumento}`,
+          margin + 50,
           margin + 60,
-          y,
         )
 
-        y += 10
-        pdf.setFont("helvetica", "bold")
-        pdf.text("FECHA DE EMISIÓN:", margin + 5, y)
-        pdf.setFont("helvetica", "normal")
-        pdf.text(new Date(licenciaSeleccionada.fechaEmision).toLocaleDateString("es-ES"), margin + 60, y)
+        // Línea separadora
+        pdf.line(margin, margin + 70, pageWidth - margin, margin + 70)
 
         // Detalle de pago
-        y += 20
-        pdf.setFillColor(240, 240, 240)
-        pdf.rect(margin, y, contentWidth, 12, "F")
         pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(11)
-        pdf.text("DETALLE DE PAGO", margin + 5, y + 8)
+        pdf.setFontSize(12)
+        pdf.text("DETALLE DE PAGO", margin, margin + 80)
 
-        y += 20
-
-        // Tabla de detalle con bordes completos
-        const colWidth = [contentWidth * 0.7, contentWidth * 0.3]
-        const rowHeight = 12
-
-        // Encabezado de tabla
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(margin, y, colWidth[0], rowHeight, "F")
-        pdf.rect(margin + colWidth[0], y, colWidth[1], rowHeight, "F")
-
-        pdf.setDrawColor(colorBorde)
-        pdf.rect(margin, y, colWidth[0], rowHeight, "S")
-        pdf.rect(margin + colWidth[0], y, colWidth[1], rowHeight, "S")
+        // Tabla de conceptos
+        pdf.setFillColor(240, 240, 240)
+        pdf.rect(margin, margin + 90, contentWidth, 10, "F")
 
         pdf.setFont("helvetica", "bold")
         pdf.setFontSize(10)
-        pdf.text("Concepto", margin + 5, y + 8)
-        pdf.text("Importe", margin + colWidth[0] + colWidth[1] - 5, y + 8, { align: "right" })
+        pdf.text("Concepto", margin + 5, margin + 97)
+        pdf.text("Importe", pageWidth - margin - 20, margin + 97)
 
-        // Contenido de tabla
-        y += rowHeight
+        // Contenido de la tabla
         pdf.setFont("helvetica", "normal")
+        pdf.text(`Emisión de Licencia Clase ${licenciaSeleccionada.claseLicencia}`, margin + 5, margin + 110)
+        pdf.text(`Vigencia: ${licenciaSeleccionada.vigencia} años`, margin + 5, margin + 118)
+        pdf.text(`$${licenciaSeleccionada.costo}`, pageWidth - margin - 20, margin + 110)
 
-        // Primera fila
-        pdf.rect(margin, y, colWidth[0], rowHeight * 2, "S")
-        pdf.rect(margin + colWidth[0], y, colWidth[1], rowHeight * 2, "S")
-
-        pdf.text(`Emisión de Licencia Clase ${licenciaSeleccionada.claseLicencia}`, margin + 5, y + 8)
-        pdf.text(`Vigencia: ${licenciaSeleccionada.vigencia} años`, margin + 10, y + 18)
-        pdf.text(
-          `$${licenciaSeleccionada.costo.toLocaleString("es-AR")}`,
-          margin + colWidth[0] + colWidth[1] - 5,
-          y + 8,
-          {
-            align: "right",
-          },
-        )
-
-        y += rowHeight * 2
+        // Línea separadora
+        pdf.line(margin, margin + 125, pageWidth - margin, margin + 125)
 
         // Total
-        pdf.setFillColor(245, 245, 245)
-        pdf.rect(margin, y, colWidth[0], rowHeight, "FD")
-        pdf.rect(margin + colWidth[0], y, colWidth[1], rowHeight, "FD")
+        pdf.setFillColor(240, 240, 240)
+        pdf.rect(margin, margin + 130, contentWidth, 10, "F")
 
         pdf.setFont("helvetica", "bold")
-        pdf.text("TOTAL", margin + 5, y + 8)
-        pdf.text(
-          `$${licenciaSeleccionada.costo.toLocaleString("es-AR")}`,
-          margin + colWidth[0] + colWidth[1] - 5,
-          y + 8,
-          {
-            align: "right",
-          },
-        )
+        pdf.text("TOTAL", margin + 5, margin + 137)
+        pdf.text(`$${licenciaSeleccionada.costo}`, pageWidth - margin - 20, margin + 137)
 
         // Pie de página
-        y += 30
-        pdf.setDrawColor(colorBorde)
-        pdf.line(margin, y, pageWidth - margin, y)
+        pdf.line(margin, pageHeight - margin - 30, pageWidth - margin, pageHeight - margin - 30)
 
-        y += 10
-        pdf.setFont("helvetica", "bold")
-        pdf.setFontSize(9)
-        pdf.text("OPERADOR:", margin + 5, y)
         pdf.setFont("helvetica", "normal")
-        pdf.text("Admin Sistema", margin + 30, y)
+        pdf.setFontSize(10)
+        pdf.text("OPERADOR:", margin, pageHeight - margin - 20)
+        pdf.text("Admin Sistema", margin + 30, pageHeight - margin - 20)
 
-        pdf.setFont("helvetica", "bold")
-        pdf.text("FECHA Y HORA:", pageWidth - margin - 80, y)
-        pdf.setFont("helvetica", "normal")
-        pdf.text(new Date().toLocaleString("es-ES"), pageWidth - margin - 5, y, { align: "right" })
+        pdf.text("FECHA Y HORA:", pageWidth - margin - 80, pageHeight - margin - 20)
+        pdf.text(new Date().toLocaleString("es-ES"), pageWidth - margin - 30, pageHeight - margin - 20)
 
-        // Información adicional
-        y += 20
+        // Nota legal
         pdf.setFontSize(8)
-        pdf.setTextColor(100, 100, 100)
-        pdf.text("ESTE COMPROBANTE DEBE SER CONSERVADO COMO CONSTANCIA DE PAGO", pageWidth / 2, y, { align: "center" })
-        pdf.text("Municipalidad - Sistema de Licencias", pageWidth / 2, y + 5, { align: "center" })
+        pdf.text(
+          "Este documento es un comprobante oficial de pago. Conserve este documento para futuros trámites.",
+          margin,
+          pageHeight - margin - 10,
+        )
 
-        // Borde alrededor de todo el comprobante
-        pdf.setDrawColor(colorBorde)
-        pdf.rect(margin, margin, contentWidth, y + 15 - margin, "S")
+        // Descargar el PDF
+        const fileName = `Comprobante_${licenciaSeleccionada.numeroLicencia}.pdf`
+        pdf.save(fileName)
       }
-
-      // Agregar metadatos al PDF
-      pdf.setProperties({
-        title:
-          activeTab === "licencia"
-            ? `Licencia ${licenciaSeleccionada.numeroLicencia}`
-            : `Comprobante ${licenciaSeleccionada.numeroLicencia}`,
-        subject: "Sistema Municipal de Licencias",
-        author: "Municipalidad",
-        keywords: "licencia, conducir, municipal",
-        creator: "Sistema Municipal de Licencias",
-      })
-
-      // Descargar el PDF
-      const fileName =
-        activeTab === "licencia"
-          ? `Licencia_${licenciaSeleccionada.numeroLicencia}.pdf`
-          : `Comprobante_${licenciaSeleccionada.numeroLicencia}.pdf`
-
-      pdf.save(fileName)
-      console.log("PDF generado y descargado correctamente")
     } catch (error) {
       console.error("Error al generar el PDF:", error)
       alert("Hubo un error al generar el PDF. Por favor, intente nuevamente.")
@@ -729,7 +620,14 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={handleNumeroDocumentoChange}
+                        onChange={(e) => {
+                          handleNumeroDocumentoChange(e)
+
+                          // Validación en tiempo real para DNI
+                          if (tipoDocumento === "DNI" && !/^\d+$/.test(e.target.value) && e.target.value.length > 0) {
+                            animateErrorField(e.target)
+                          }
+                        }}
                         maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
@@ -810,16 +708,18 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                     {fotoTitular ? (
                       <div className="flex flex-col items-center">
                         <div className="relative w-32 h-40 mb-4">
-                          <Image
-                            src={fotoTitular || "/placeholder.svg"}
-                            alt="Foto del titular"
-                            fill
-                            className="object-cover rounded-md"
-                          />
+                          <div className="w-full h-full overflow-hidden rounded-md">
+                            <Image
+                              src={fotoTitular || "/placeholder.svg"}
+                              alt="Foto del titular"
+                              fill
+                              className="object-cover"
+                            />
+                          </div>
                           <Button
                             variant="destructive"
                             size="icon"
-                            className="absolute -top-2 -right-2 h-6 w-6 rounded-full"
+                            className="absolute top-1 right-1 h-6 w-6 rounded-full shadow-md"
                             onClick={eliminarFoto}
                           >
                             <X className="h-4 w-4" />
@@ -863,119 +763,134 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                   </div>
 
                   {/* Previsualización de la licencia con slider para móviles */}
-                  <div
-                    ref={licenciaRef}
-                    className="border rounded-lg overflow-hidden dark:border-slate-700"
-                    ref={licenciaPreviewRef}
-                  >
-                    <div className="bg-slate-800 text-white p-4">
-                      <div className="flex justify-between items-center">
-                        <div className="flex items-center gap-3">
-                          <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center overflow-hidden">
-                            <Image
-                              src="/images/logo-auto.png"
-                              alt="Logo Municipal"
-                              width={40}
-                              height={40}
-                              className="rounded-full object-contain"
-                            />
-                          </div>
-                          <div>
-                            <h3 className="font-bold">MUNICIPALIDAD</h3>
-                            <p className="text-xs">LICENCIA DE CONDUCIR</p>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <p className="text-sm">N° {licenciaSeleccionada.numeroLicencia}</p>
-                          <p className="text-xs">CLASE {licenciaSeleccionada.claseLicencia}</p>
-                        </div>
-                      </div>
-                    </div>
+                  <div className="space-y-6" ref={licenciaPreviewRef}>
+                    <div className="border rounded-lg overflow-hidden dark:border-slate-700">
+                      <h3 className="text-lg font-medium p-4 bg-slate-100 dark:bg-slate-800 dark:text-white border-b dark:border-slate-700">
+                        Vista previa de la licencia
+                      </h3>
 
-                    {/* Contenedor con scroll para móviles */}
-                    <div className="relative">
-                      <div className="max-h-[400px] overflow-y-auto p-6 dark:bg-slate-800 scrollbar-thin scrollbar-thumb-slate-400 scrollbar-track-slate-200 dark:scrollbar-thumb-slate-600 dark:scrollbar-track-slate-800">
-                        <div className="grid grid-cols-3 gap-6">
-                          <div className="col-span-1">
-                            <div className="w-full aspect-[3/4] bg-slate-200 dark:bg-slate-700 rounded flex items-center justify-center overflow-hidden">
-                              {fotoTitular ? (
+                      {/* Contenedor con scroll para móviles */}
+                      <div className="max-h-[500px] overflow-y-auto scrollbar-thin">
+                        {/* Anverso de la licencia */}
+                        <div ref={licenciaRef} className="relative">
+                          <div className="relative w-full" ref={licenciaFrenteRef}>
+                            <Image
+                              src="/images/licencia-frente.png"
+                              alt="Anverso de la licencia"
+                              width={800}
+                              height={500}
+                              className="w-full h-auto"
+                              priority
+                              onError={(e) => {
+                                console.error("Error al cargar la imagen del anverso de la licencia")
+                                e.currentTarget.src = "/placeholder.svg?height=500&width=800"
+                              }}
+                            />
+
+                            {/* Foto del titular superpuesta en el rectángulo blanco */}
+                            <div className="absolute top-[25%] left-[5%] w-[26%] h-[38%] flex items-center justify-center bg-transparent overflow-hidden">
+                              {fotoTitular && (
                                 <div className="relative w-full h-full">
                                   <Image
                                     src={fotoTitular || "/placeholder.svg"}
                                     alt="Foto del titular"
                                     fill
                                     className="object-cover"
+                                    onError={() => {
+                                      console.error("Error al cargar la foto del titular")
+                                      setFotoTitular(null)
+                                    }}
+                                    unoptimized
                                   />
                                 </div>
-                              ) : (
-                                <Image
-                                  src="/placeholder.svg?height=150&width=120"
-                                  alt="Foto del titular"
-                                  width={120}
-                                  height={150}
-                                  className="rounded"
-                                />
                               )}
                             </div>
-                          </div>
 
-                          <div className="col-span-2 space-y-4">
-                            <div>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">APELLIDO Y NOMBRE</p>
-                              <p className="font-semibold dark:text-white">
-                                {licenciaSeleccionada.titular.nombreApellido}
+                            {/* Datos superpuestos al lado de la foto */}
+                            <div className="absolute top-[22%] left-[35%] text-black text-[10px]">
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">N° Licencia:</span>{" "}
+                                {licenciaSeleccionada?.numeroLicencia}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Apellido:</span>{" "}
+                                {licenciaSeleccionada?.titular.nombreApellido.split(" ")[0]}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Nombre:</span>{" "}
+                                {licenciaSeleccionada?.titular.nombreApellido.split(" ").slice(1).join(" ")}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Domicilio:</span>{" "}
+                                {licenciaSeleccionada?.titular.direccion}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Fecha de nacimiento:</span>{" "}
+                                {new Date(licenciaSeleccionada?.titular.fechaNacimiento || "").toLocaleDateString(
+                                  "es-AR",
+                                )}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Emisión:</span>{" "}
+                                {new Date(licenciaSeleccionada?.fechaEmision || "").toLocaleDateString("es-AR")}
+                              </p>
+                              <p className="mb-0 leading-tight">
+                                <span className="font-semibold">Vencimiento:</span>{" "}
+                                {new Date(licenciaSeleccionada?.fechaVencimiento || "").toLocaleDateString("es-AR")}
                               </p>
                             </div>
 
-                            <div className="grid grid-cols-2 gap-4">
-                              <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">DOCUMENTO</p>
-                                <p className="dark:text-white">
-                                  {licenciaSeleccionada.titular.tipoDocumento}{" "}
-                                  {licenciaSeleccionada.titular.numeroDocumento}
-                                </p>
-                              </div>
-
-                              <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">FECHA NACIMIENTO</p>
-                                <p className="dark:text-white">
-                                  {new Date(licenciaSeleccionada.titular.fechaNacimiento).toLocaleDateString("es-ES")}
-                                </p>
-                              </div>
+                            {/* Clase en la parte superior derecha */}
+                            <div className="absolute top-[22%] right-[5%] text-right">
+                              <p className="text-base font-bold text-black">
+                                CLASE {licenciaSeleccionada?.claseLicencia}
+                              </p>
                             </div>
+                          </div>
+                        </div>
 
-                            <div>
-                              <p className="text-xs text-slate-500 dark:text-slate-400">DOMICILIO</p>
-                              <p className="dark:text-white">{licenciaSeleccionada.titular.direccion}</p>
-                            </div>
+                        {/* Reverso de la licencia */}
+                        <div className="relative w-full mt-4" ref={licenciaDorsoRef}>
+                          <Image
+                            src="/images/licencia-reverso-color.png"
+                            alt="Reverso de la licencia"
+                            width={800}
+                            height={500}
+                            className="w-full h-auto"
+                            priority
+                            onError={(e) => {
+                              console.error("Error al cargar la imagen del reverso de la licencia")
+                              e.currentTarget.src = "/placeholder.svg?height=500&width=800"
+                            }}
+                          />
 
-                            <div className="grid grid-cols-3 gap-4">
+                          {/* Datos superpuestos en el reverso */}
+                          <div className="absolute top-[40%] left-[10%] right-[10%] text-black">
+                            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px]">
                               <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">GRUPO SANG.</p>
-                                <p className="dark:text-white">
-                                  {licenciaSeleccionada.titular.grupoSanguineo} {licenciaSeleccionada.titular.factorRh}
-                                </p>
+                                <span className="font-semibold">DNI:</span>{" "}
+                                {licenciaSeleccionada?.titular.numeroDocumento}
                               </div>
-
-                              <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">DONANTE</p>
-                                <p className="dark:text-white">{licenciaSeleccionada.titular.donanteOrganos}</p>
+                              <div className="text-right">
+                                <span className="font-semibold">Clase</span> {licenciaSeleccionada?.claseLicencia}
                               </div>
-
                               <div>
-                                <p className="text-xs text-slate-500 dark:text-slate-400">VENCIMIENTO</p>
-                                <p className="font-semibold dark:text-white">
-                                  {new Date(licenciaSeleccionada.fechaVencimiento).toLocaleDateString("es-ES")}
-                                </p>
+                                <span className="font-semibold">Tipo de sangre:</span>{" "}
+                                {licenciaSeleccionada?.titular.grupoSanguineo}
+                                {licenciaSeleccionada?.titular.factorRh}
+                              </div>
+                              <div className="text-right">
+                                <span className="font-semibold">Donante:</span>{" "}
+                                {licenciaSeleccionada?.titular.donanteOrganos}
                               </div>
                             </div>
                           </div>
                         </div>
-                      </div>
 
-                      {/* Indicador de scroll */}
-                      <div className="absolute bottom-0 left-0 right-0 flex justify-center pb-1 pointer-events-none">
-                        <div className="h-1 w-16 bg-slate-300 dark:bg-slate-600 rounded-full opacity-70"></div>
+                        {/* Indicador de scroll */}
+                        <div className="flex justify-center py-2">
+                          <div className="h-1 w-16 bg-slate-300 dark:bg-slate-600 rounded-full opacity-70"></div>
+                        </div>
                       </div>
                     </div>
                   </div>
@@ -1009,7 +924,10 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
             {/* El contenido del comprobante con buscador */}
             <div className="space-y-6">
               {!licenciaSeleccionada ? (
-                <div className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800">
+                <div
+                  className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
+                  ref={comprobanteSearchFormRef}
+                >
                   <h3 className="text-lg font-medium mb-4 dark:text-white">Buscar Comprobante</h3>
 
                   {errorBusqueda && (
@@ -1035,7 +953,14 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                       <Input
                         placeholder="Número de Documento"
                         value={numeroDocumento}
-                        onChange={handleNumeroDocumentoChange}
+                        onChange={(e) => {
+                          handleNumeroDocumentoChange(e)
+
+                          // Validación en tiempo real para DNI
+                          if (tipoDocumento === "DNI" && !/^\d+$/.test(e.target.value) && e.target.value.length > 0) {
+                            animateErrorField(e.target)
+                          }
+                        }}
                         maxLength={tipoDocumento === "DNI" ? 8 : 9}
                       />
                     </div>
@@ -1079,7 +1004,20 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                   className="border rounded-lg p-4 dark:border-slate-700 bg-slate-50 dark:bg-slate-800"
                   ref={comprobanteRef}
                 >
-                  <h3 className="text-lg font-medium mb-4 dark:text-white">Comprobante de Pago</h3>
+                  <div className="flex justify-between items-center mb-4">
+                    <h3 className="text-lg font-medium dark:text-white">Comprobante de Pago</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        setLicenciaSeleccionada(null)
+                        setBusquedaRealizada(false)
+                      }}
+                    >
+                      Cambiar
+                    </Button>
+                  </div>
+
                   <div className="mb-4 p-3 bg-slate-100 dark:bg-slate-700 rounded-md">
                     <div className="flex justify-between items-center">
                       <div>
@@ -1093,6 +1031,52 @@ export default function ImprimirLicenciaFormMobile({ role }: ImprimirLicenciaFor
                         <p className="text-xs text-slate-500 dark:text-slate-400">
                           Clase {licenciaSeleccionada.claseLicencia}
                         </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4">
+                    <div>
+                      <h4 className="font-medium mb-2 dark:text-white">Detalle de Pago</h4>
+                      <div className="border rounded-md overflow-hidden dark:border-slate-700">
+                        <table className="w-full">
+                          <thead className="bg-slate-100 dark:bg-slate-700">
+                            <tr>
+                              <th className="text-left p-2 text-xs dark:text-white">Concepto</th>
+                              <th className="text-right p-2 text-xs dark:text-white">Importe</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            <tr className="border-t dark:border-slate-700">
+                              <td className="p-2 dark:text-white">
+                                <p className="text-sm">
+                                  Emisión de Licencia Clase {licenciaSeleccionada.claseLicencia}
+                                </p>
+                                <p className="text-xs text-slate-500 dark:text-slate-400">
+                                  Vigencia: {licenciaSeleccionada.vigencia} años
+                                </p>
+                              </td>
+                              <td className="p-2 text-right dark:text-white text-sm">${licenciaSeleccionada.costo}</td>
+                            </tr>
+                            <tr className="border-t bg-slate-50 dark:bg-slate-700 dark:border-slate-600">
+                              <td className="p-2 font-semibold dark:text-white text-sm">TOTAL</td>
+                              <td className="p-2 text-right font-semibold dark:text-white text-sm">
+                                ${licenciaSeleccionada.costo}
+                              </td>
+                            </tr>
+                          </tbody>
+                        </table>
+                      </div>
+                    </div>
+
+                    <div className="border-t pt-4 flex justify-between dark:border-slate-700">
+                      <div>
+                        <p className="text-xs text-slate-500 dark:text-slate-400">OPERADOR</p>
+                        <p className="dark:text-white text-sm">Admin Sistema</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="text-xs text-slate-500 dark:text-slate-400">FECHA Y HORA</p>
+                        <p className="dark:text-white text-sm">{new Date().toLocaleString("es-ES")}</p>
                       </div>
                     </div>
                   </div>

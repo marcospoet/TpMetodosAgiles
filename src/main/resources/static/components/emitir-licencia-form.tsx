@@ -3,7 +3,7 @@
 import type React from "react"
 
 import { useState, useEffect, useRef } from "react"
-import { useRouter } from "next/navigation"
+import { useRouter, useSearchParams } from "next/navigation"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
@@ -12,6 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { AlertCircle, CheckCircle2, Search, ArrowLeft } from "lucide-react"
 import { Alert, AlertDescription } from "@/components/ui/alert"
 import { Separator } from "@/components/ui/separator"
+import { titularesDB } from "@/data/titular-data"
 import gsap from "gsap"
 
 // Tipo para el titular
@@ -27,49 +28,39 @@ interface Titular {
   edad: number
 }
 
-// Base de datos simulada de titulares - Actualizada para ser consistente con licencia-data.ts
-const titularesDB = [
-  {
-    tipoDocumento: "DNI",
-    numeroDocumento: "12345678",
-    nombreApellido: "Jose Cammisi",
-    fechaNacimiento: "1990-05-15",
-    direccion: "Av. Ojo Las Del 14",
-    grupoSanguineo: "0",
-    factorRh: "+",
-    donanteOrganos: "Si",
-    edad: 33,
-  },
-  {
-    tipoDocumento: "DNI",
-    numeroDocumento: "87654321",
-    nombreApellido: "María González",
-    fechaNacimiento: "1985-10-20",
-    direccion: "Calle Secundaria 456",
-    grupoSanguineo: "A",
-    factorRh: "-",
-    donanteOrganos: "No",
-    edad: 38,
-  },
-  {
-    tipoDocumento: "Pasaporte",
-    numeroDocumento: "AB123456",
-    nombreApellido: "Carlos Rodríguez",
-    fechaNacimiento: "2000-03-10",
-    direccion: "Pasaje Norte 789",
-    grupoSanguineo: "B",
-    factorRh: "+",
-    donanteOrganos: "Si",
-    edad: 23,
-  },
-]
-
 interface EmitirLicenciaFormProps {
   role: string
 }
 
+// Función de utilidad para animar elementos con error
+const animateErrorField = (element: HTMLElement | null) => {
+  if (!element) return
+
+  // Guardar el borde original
+  const originalBorder = element.style.border
+
+  // Animar el borde y el fondo
+  gsap
+    .timeline()
+    .to(element, {
+      backgroundColor: "rgba(239, 68, 68, 0.1)",
+      border: "1px solid rgba(239, 68, 68, 0.5)",
+      duration: 0.3,
+    })
+    .to(element, {
+      backgroundColor: "",
+      border: originalBorder,
+      duration: 0.3,
+      delay: 0.2,
+    })
+
+  // Animar el shake
+  gsap.fromTo(element, { x: -5 }, { x: 5, duration: 0.1, repeat: 4, yoyo: true })
+}
+
 export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
   const router = useRouter()
+  const searchParams = useSearchParams()
   const [tipoDocumento, setTipoDocumento] = useState<string>("")
   const [numeroDocumento, setNumeroDocumento] = useState<string>("")
   const [claseLicencia, setClaseLicencia] = useState<string>("")
@@ -79,12 +70,38 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
   const [vigencia, setVigencia] = useState<number>(0)
   const [costo, setCosto] = useState<number>(0)
   const [errorEdad, setErrorEdad] = useState<string>("")
+  const [isLoading, setIsLoading] = useState<boolean>(false)
 
   const formRef = useRef<HTMLDivElement>(null)
   const busquedaRef = useRef<HTMLDivElement>(null)
   const datosRef = useRef<HTMLDivElement>(null)
   const emitirRef = useRef<HTMLDivElement>(null)
   const alertRef = useRef<HTMLDivElement>(null)
+  const initialLoadRef = useRef<boolean>(true)
+
+  // Efecto para cargar parámetros de la URL y realizar búsqueda automática
+  useEffect(() => {
+    if (initialLoadRef.current) {
+      initialLoadRef.current = false
+
+      const tipoDoc = searchParams.get("tipoDocumento")
+      const numDoc = searchParams.get("numeroDocumento")
+      const autoSearch = searchParams.get("autoSearch")
+
+      if (tipoDoc && numDoc) {
+        setTipoDocumento(tipoDoc)
+        setNumeroDocumento(numDoc)
+
+        // Si autoSearch es true, realizar la búsqueda automáticamente
+        if (autoSearch === "true") {
+          // Pequeño retraso para asegurar que los estados se actualicen
+          setTimeout(() => {
+            buscarTitular(tipoDoc, numDoc)
+          }, 100)
+        }
+      }
+    }
+  }, [searchParams])
 
   useEffect(() => {
     // Animación inicial del formulario
@@ -120,7 +137,7 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
     setNumeroDocumento("") // Limpiar el campo al cambiar el tipo
   }
 
-  // Manejar cambio en el número de documento
+  // Reemplazar el manejador actual de cambio de número de documento
   const handleNumeroDocumentoChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
 
@@ -128,6 +145,11 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
       // Para DNI, solo permitir números
       const onlyNumbers = value.replace(/[^0-9]/g, "")
       setNumeroDocumento(onlyNumbers)
+
+      // Validación en tiempo real para DNI
+      if (!/^\d+$/.test(value) && value.length > 0) {
+        animateErrorField(e.target)
+      }
     } else if (tipoDocumento === "Pasaporte") {
       // Para Pasaporte, convertir a mayúsculas
       setNumeroDocumento(value.toUpperCase())
@@ -137,58 +159,146 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
     }
   }
 
-  const buscarTitular = () => {
+  // Función de búsqueda que puede recibir parámetros opcionales
+  const buscarTitular = (tipoDoc?: string, numDoc?: string) => {
     setError("")
     setErrorEdad("")
     setTitular(null)
+    setIsLoading(true)
 
-    if (!tipoDocumento || !numeroDocumento) {
+    // Usar los parámetros proporcionados o los valores del estado
+    const tipo = tipoDoc || tipoDocumento
+    const numero = numDoc || numeroDocumento
+
+    if (!tipo || !numero) {
       setError("Debe completar tipo y número de documento")
-      // Animación de error
+      setIsLoading(false)
+      // Animación de error mejorada
       if (busquedaRef.current) {
-        gsap.fromTo(busquedaRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
+        gsap.fromTo(
+          busquedaRef.current,
+          { x: -8 },
+          { x: 8, duration: 0.1, repeat: 5, yoyo: true, ease: "power2.inOut" },
+        )
+
+        // Resaltar los campos con error
+        const inputField = busquedaRef.current.querySelector("input")
+        const selectField = busquedaRef.current.querySelector("[data-value]")
+
+        if (!tipo && selectField) {
+          gsap.fromTo(
+            selectField,
+            { boxShadow: "0 0 0 1px rgba(239, 68, 68, 0.2)" },
+            {
+              boxShadow: "0 0 0 2px rgba(239, 68, 68, 1)",
+              duration: 0.3,
+              repeat: 1,
+              yoyo: true,
+            },
+          )
+        }
+
+        if (!numero && inputField) {
+          gsap.fromTo(
+            inputField,
+            { boxShadow: "0 0 0 1px rgba(239, 68, 68, 0.2)" },
+            {
+              boxShadow: "0 0 0 2px rgba(239, 68, 68, 1)",
+              duration: 0.3,
+              repeat: 1,
+              yoyo: true,
+            },
+          )
+        }
       }
       return
     }
 
-    // Buscar en la base de datos simulada
-    const titularEncontrado = titularesDB.find(
-      (t) => t.tipoDocumento === tipoDocumento && t.numeroDocumento === numeroDocumento,
-    )
+    try {
+      // Simular una pequeña demora para mostrar el estado de carga
+      setTimeout(() => {
+        // Buscar en la base de datos de titulares importada
+        const titularEncontrado = titularesDB.find((t) => t.tipoDocumento === tipo && t.numeroDocumento === numero)
 
-    if (!titularEncontrado) {
-      setError("No se encontró ningún titular con ese documento")
-      // Animación de error
-      if (busquedaRef.current) {
-        gsap.fromTo(busquedaRef.current, { x: -5 }, { x: 5, duration: 0.1, repeat: 5, yoyo: true })
-      }
-      return
-    }
+        if (!titularEncontrado) {
+          setError("No se encontró ningún titular con ese documento")
+          setIsLoading(false)
+          // Animación de error mejorada
+          if (busquedaRef.current) {
+            gsap.fromTo(
+              busquedaRef.current,
+              { x: -8 },
+              { x: 8, duration: 0.1, repeat: 5, yoyo: true, ease: "power2.inOut" },
+            )
 
-    // Animación al encontrar titular
-    if (busquedaRef.current) {
-      gsap.to(busquedaRef.current, {
-        y: -10,
-        opacity: 0.8,
-        duration: 0.3,
-        onComplete: () => {
+            // Animar el mensaje de error para que sea más visible
+            setTimeout(() => {
+              const errorAlert = busquedaRef.current?.querySelector('[role="alert"]')
+              if (errorAlert) {
+                gsap.fromTo(
+                  errorAlert,
+                  { scale: 0.95, opacity: 0.8 },
+                  {
+                    scale: 1,
+                    opacity: 1,
+                    duration: 0.3,
+                    ease: "back.out(1.7)",
+                  },
+                )
+              }
+            }, 100)
+          }
+          return
+        }
+
+        // Animación al encontrar titular (mejorada)
+        if (busquedaRef.current) {
+          gsap.to(busquedaRef.current.querySelectorAll("input, select, button"), {
+            scale: 1.03,
+            duration: 0.2,
+            stagger: 0.05,
+            yoyo: true,
+            repeat: 1,
+            onComplete: () => {
+              gsap.to(busquedaRef.current, {
+                y: -10,
+                opacity: 0.8,
+                duration: 0.3,
+                onComplete: () => {
+                  setTitular(titularEncontrado)
+                  setIsLoading(false)
+                  // Animar la aparición de los datos del titular
+                  setTimeout(() => {
+                    if (datosRef.current) {
+                      gsap.fromTo(
+                        datosRef.current,
+                        { opacity: 0, y: 20 },
+                        { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" },
+                      )
+                    }
+                  }, 100)
+                },
+              })
+            },
+          })
+        } else {
           setTitular(titularEncontrado)
-          // Animar la aparición de los datos del titular
-          setTimeout(() => {
-            if (datosRef.current) {
-              gsap.fromTo(
-                datosRef.current,
-                { opacity: 0, y: 20 },
-                { opacity: 1, y: 0, duration: 0.5, ease: "back.out(1.2)" },
-              )
-            }
-          }, 100)
-        },
-      })
-    } else {
-      setTitular(titularEncontrado)
+          setIsLoading(false)
+        }
+      }, 500) // Pequeña demora para mostrar el estado de carga
+    } catch (error) {
+      console.error("Error al buscar titular:", error)
+      setError("Ocurrió un error al buscar el titular. Por favor, intente nuevamente.")
+      setIsLoading(false)
     }
   }
+
+  useEffect(() => {
+    return () => {
+      // Limpiar todas las animaciones GSAP al desmontar
+      gsap.killTweensOf("*")
+    }
+  }, [])
 
   const calcularVigenciaYCosto = () => {
     if (!titular || !claseLicencia) return
@@ -224,21 +334,26 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
   }
 
   const emitirLicencia = () => {
-    // En producción, aquí se enviarían los datos al backend
-    console.log({
-      titular,
-      claseLicencia,
-      vigencia,
-      costo,
-    })
+    try {
+      // En producción, aquí se enviarían los datos al backend
+      console.log({
+        titular,
+        claseLicencia,
+        vigencia,
+        costo,
+      })
 
-    // Mostrar mensaje de éxito inmediatamente
-    setSuccess(true)
+      // Mostrar mensaje de éxito inmediatamente
+      setSuccess(true)
 
-    // Redireccionar después de 2 segundos para dar tiempo a ver el mensaje
-    setTimeout(() => {
-      router.push(`/dashboard/licencias/imprimir?role=${role}`)
-    }, 2000)
+      // Redireccionar después de 2 segundos para dar tiempo a ver el mensaje
+      setTimeout(() => {
+        router.push(`/dashboard/licencias/imprimir?role=${role}`)
+      }, 2000)
+    } catch (error) {
+      console.error("Error al emitir licencia:", error)
+      setError("Ocurrió un error al emitir la licencia. Por favor, intente nuevamente.")
+    }
   }
 
   return (
@@ -289,9 +404,41 @@ export default function EmitirLicenciaForm({ role }: EmitirLicenciaFormProps) {
                 </div>
 
                 <div className="flex items-end">
-                  <Button onClick={buscarTitular} className="w-full transition-transform duration-300 hover:scale-105">
-                    <Search className="h-4 w-4 mr-2" />
-                    Buscar
+                  <Button
+                    onClick={() => buscarTitular()}
+                    className="w-full transition-transform duration-300 hover:scale-105"
+                    disabled={isLoading}
+                  >
+                    {isLoading ? (
+                      <span className="flex items-center">
+                        <svg
+                          className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                          xmlns="http://www.w3.org/2000/svg"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                        >
+                          <circle
+                            className="opacity-25"
+                            cx="12"
+                            cy="12"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="4"
+                          ></circle>
+                          <path
+                            className="opacity-75"
+                            fill="currentColor"
+                            d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                          ></path>
+                        </svg>
+                        Buscando...
+                      </span>
+                    ) : (
+                      <>
+                        <Search className="h-4 w-4 mr-2" />
+                        Buscar
+                      </>
+                    )}
                   </Button>
                 </div>
               </div>

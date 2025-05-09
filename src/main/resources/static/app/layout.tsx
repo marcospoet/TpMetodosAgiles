@@ -7,6 +7,9 @@ export const metadata: Metadata = {
   title: "Sistema Municipal de Licencias",
   description: "Sistema de gestión de licencias de conducir",
   generator: "v0.dev",
+  icons: {
+    icon: "/favicon.ico",
+  },
 }
 
 export default function RootLayout({

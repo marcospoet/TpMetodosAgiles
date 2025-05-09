@@ -31,7 +31,7 @@ export default function Navigation({ role }: NavigationProps) {
   }
 
   return (
-    <header className="bg-slate-800 dark:bg-slate-900 text-white">
+    <header className="bg-gray-600 dark:bg-gray-700 text-white">
       <div className="container mx-auto px-4">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center">
@@ -58,7 +58,7 @@ export default function Navigation({ role }: NavigationProps) {
                 variant="ghost"
                 size="icon"
                 onClick={toggleTheme}
-                className="text-white hover:bg-slate-700 transition-transform duration-300 hover:scale-105"
+                className="text-white hover:bg-gray-500 transition-transform duration-300 hover:scale-105"
                 title={theme === "dark" ? "Cambiar a modo claro" : "Cambiar a modo oscuro"}
               >
                 {theme === "dark" ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
@@ -67,7 +67,7 @@ export default function Navigation({ role }: NavigationProps) {
 
             <Button
               variant="ghost"
-              className="text-slate-300 hover:bg-slate-700 hover:text-white transition-colors duration-300"
+              className="text-gray-200 hover:bg-gray-500 hover:text-white transition-colors duration-300"
               onClick={handleLogout}
             >
               <LogOut className="h-5 w-5 mr-2" />
