@@ -59,4 +59,9 @@ public class Licencia {
     @Column(name = "vigente", nullable = false)
     private boolean vigente;
 
+
+    @ManyToOne(fetch = FetchType.LAZY, optional = false) //para que no cargue automaticamente la relacion, sólo se materializa si llamas a licencia.getEmisor()
+    @JoinColumn(name = "emisor_id", nullable = false)
+    private Usuario emisor;
+
 }
