@@ -6,6 +6,7 @@ import org.springframework.http.*;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,4 +56,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body("Error interno del servidor");
     }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<Void> handleMissingResource(NoResourceFoundException ex) {
+        // Logueamos la ruta que no se encontró para depuración
+        logger.error("Recurso estático no encontrado: {}", ex.getResourcePath(), ex);
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+    }
+
 }
