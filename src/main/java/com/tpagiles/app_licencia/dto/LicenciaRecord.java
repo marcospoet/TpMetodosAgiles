@@ -7,12 +7,19 @@ import com.tpagiles.app_licencia.model.Titular;
 import com.tpagiles.app_licencia.model.Usuario;
 import com.tpagiles.app_licencia.model.enums.ClaseLicencia;
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
-@JsonPropertyOrder({ "titularId", "clase", "numeroCopia", "motivoCopia" })
+@JsonPropertyOrder({
+        "titularId",
+        "clase",
+        "numeroCopia",
+        "motivoCopia",
+        "emisor"
+})
 @Schema(description = "Datos necesarios para emitir una licencia (clases A o B)")
 public record LicenciaRecord(
 
@@ -47,16 +54,23 @@ public record LicenciaRecord(
                 requiredMode = Schema.RequiredMode.NOT_REQUIRED
         )
         @Size(max = 200, message = "El motivo de copia no puede superar 200 caracteres")
-        String motivoCopia
+        String motivoCopia,
 
+        @Schema(
+                description = "Username del usuario que emite la licencia",
+                example = "admin",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+        @NotBlank(message = "Debe indicar el username del emisor")
+        String emisor
 ) {
-    public Licencia toEntity(Titular titular, Usuario emisor) {
-        return Licencia.builder()
-                .titular(titular)
-                .clase(this.clase)
-                .numeroCopia(this.numeroCopia)
-                .motivoCopia(this.motivoCopia)
-                .emisor(emisor)
-                .build();
-    }
+        public Licencia toEntity(Titular titular, Usuario emisor) {
+                return Licencia.builder()
+                        .titular(titular)
+                        .clase(this.clase)
+                        .numeroCopia(this.numeroCopia)
+                        .motivoCopia(this.motivoCopia)
+                        .emisor(emisor)
+                        .build();
+        }
 }

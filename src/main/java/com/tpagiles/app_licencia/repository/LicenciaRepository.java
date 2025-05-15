@@ -13,4 +13,5 @@ public interface LicenciaRepository extends JpaRepository<Licencia, Long> {
     List<Licencia> findByTitularId(Long titularId);
     List<Licencia> findByVigente(boolean vigente);
     boolean findByTitularIdAndClase(long TitularId, ClaseLicencia clase);
+    boolean existsByTitularAndClase(Titular titular, ClaseLicencia claseLicencia);
 }
