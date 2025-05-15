@@ -42,7 +42,7 @@ public record TitularResponseRecord(
         @Schema(description = "Número de documento", example = "12345678")
         String numeroDocumento,
 
-        @Schema(description = "Grupo sanguíneo", example = "O_POSITIVO")
+        @Schema(description = "Grupo sanguíneo", example = "O")
         String grupoSanguineo,
 
         @Schema(description = "Factor RH", example = "NEGATIVO")

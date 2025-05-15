@@ -11,7 +11,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor //generate a private constructor for us that contains constants and variables decorated with the final keyword.
@@ -30,9 +29,11 @@ public class TitularService implements ITitularService{
     }
 
     @Override
-    @Transactional(readOnly = true) // no hace dirty-checking, le indico solo lectura
-    public Optional<Titular> obtenerPorId(Long id) {
-        return titularRepository.findById(id);
+    @Transactional(readOnly = true)
+    public Titular obtenerPorId(Long id) {
+        return titularRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Titular no encontrado con id: " + id));
     }
 
     @Override

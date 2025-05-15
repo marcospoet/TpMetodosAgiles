@@ -50,6 +50,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
     }
 
+    @ExceptionHandler(InvalidLicenseException.class)
+    public ResponseEntity<String> handleInvalidLicense(InvalidLicenseException ex) {
+        logger.error("InvalidLicense: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(ex.getMessage());
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<String> handleGeneral(Exception ex) {
         logger.error("Internal error", ex);

@@ -9,6 +9,7 @@ import lombok.Setter;
 
 
 import java.time.LocalDate;
+import java.time.Period;
 
 @NoArgsConstructor
 @AllArgsConstructor
@@ -30,4 +31,8 @@ public class Persona {
             nullable = false
     )
     private LocalDate fechaNacimiento;
+
+    public int getEdad() {
+        return Period.between(this.fechaNacimiento, LocalDate.now()).getYears();
+    }
 }
