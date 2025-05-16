@@ -1,75 +1,89 @@
 package com.tpagiles.app_licencia.exception;
 
+import com.tpagiles.app_licencia.dto.ErrorResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
-import org.springframework.validation.FieldError;
+
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
-import org.springframework.web.servlet.resource.NoResourceFoundException;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.time.OffsetDateTime;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
     private final Logger logger = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
+    private ErrorResponse buildError(HttpStatus status, String message) {
+        return new ErrorResponse(
+                OffsetDateTime.now(),
+                status.value(),
+                message
+        );
+    }
+
     @ExceptionHandler(ResourceNotFoundException.class)
-    public ResponseEntity<String> handleNotFound(ResourceNotFoundException ex) {
+    public ResponseEntity<ErrorResponse> handleNotFound(ResourceNotFoundException ex) {
         logger.error("ResourceNotFound: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(buildError(HttpStatus.NOT_FOUND, ex.getMessage()));
     }
 
     @ExceptionHandler(ResourceTypeMismatchException.class)
-    public ResponseEntity<String> handleTypeMismatch(ResourceTypeMismatchException ex) {
+    public ResponseEntity<ErrorResponse> handleTypeMismatch(ResourceTypeMismatchException ex) {
         logger.error("ResourceTypeMismatch: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(buildError(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     @ExceptionHandler(ResourceAlreadyExistsException.class)
-    public ResponseEntity<String> handleAlreadyExists(ResourceAlreadyExistsException ex) {
+    public ResponseEntity<ErrorResponse> handleAlreadyExists(ResourceAlreadyExistsException ex) {
         logger.error("ResourceAlreadyExists: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.CONFLICT)
+                .body(buildError(HttpStatus.CONFLICT, ex.getMessage()));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<Map<String,String>> handleValidationExceptions(MethodArgumentNotValidException ex) {
-        logger.error("Validation failed: {}", ex.getMessage());
-        Map<String,String> errors = new HashMap<>();
-        for (FieldError fe : ex.getBindingResult().getFieldErrors()) {
-            errors.put(fe.getField(), fe.getDefaultMessage());
-        }
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(errors);
+    public ResponseEntity<ErrorResponse> handleValidationExceptions(MethodArgumentNotValidException ex) {
+        String mensaje = ex.getBindingResult()
+                .getFieldErrors()
+                .stream()
+                .map(fe -> fe.getField() + ": " + fe.getDefaultMessage())
+                .reduce((a,b) -> a + "; " + b)
+                .orElse(ex.getMessage());
+        logger.error("Validation failed: {}", mensaje);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(buildError(HttpStatus.BAD_REQUEST, mensaje));
     }
 
     @ExceptionHandler(IllegalArgumentException.class)
-    public ResponseEntity<String> handleIllegalArg(IllegalArgumentException ex) {
+    public ResponseEntity<ErrorResponse> handleIllegalArg(IllegalArgumentException ex) {
         logger.error("IllegalArgument: {}", ex.getMessage());
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(buildError(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     @ExceptionHandler(InvalidLicenseException.class)
-    public ResponseEntity<String> handleInvalidLicense(InvalidLicenseException ex) {
+    public ResponseEntity<ErrorResponse> handleInvalidLicense(InvalidLicenseException ex) {
         logger.error("InvalidLicense: {}", ex.getMessage());
         return ResponseEntity
                 .status(HttpStatus.BAD_REQUEST)
-                .body(ex.getMessage());
+                .body(buildError(HttpStatus.BAD_REQUEST, ex.getMessage()));
     }
 
     @ExceptionHandler(Exception.class)
-    public ResponseEntity<String> handleGeneral(Exception ex) {
+    public ResponseEntity<ErrorResponse> handleGeneral(Exception ex) {
         logger.error("Internal error", ex);
-        return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                .body("Error interno del servidor");
-    }
-
-    @ExceptionHandler(NoResourceFoundException.class)
-    public ResponseEntity<Void> handleMissingResource(NoResourceFoundException ex) {
-        // Logueamos la ruta que no se encontró para depuración
-        logger.error("Recurso estático no encontrado: {}", ex.getResourcePath(), ex);
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        return ResponseEntity
+                .status(HttpStatus.INTERNAL_SERVER_ERROR)
+                .body(buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor"));
     }
 
 }
+
