@@ -16,7 +16,6 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
-import io.swagger.v3.oas.annotations.parameters.RequestBody;
 
 
 @Tag(name = "Titulares", description = "API para gestión de titulares")
@@ -31,7 +30,7 @@ public class TitularController {
             summary     = "Crear un nuevo Titular",
             description = "Valida y persiste un Titular. Devuelve el recurso creado con su ID.",
             tags        = { "Titulares" },
-            requestBody = @RequestBody(
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     description = "Datos del Titular a crear",
                     required    = true,
                     content     = @Content(
