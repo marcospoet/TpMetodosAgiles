@@ -2,6 +2,7 @@ package com.tpagiles.app_licencia.service.impl;
 
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
+import com.tpagiles.app_licencia.exception.ResourceAlreadyExistsException;
 import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
 import com.tpagiles.app_licencia.model.Licencia;
 import com.tpagiles.app_licencia.model.Titular;
@@ -34,7 +35,14 @@ public class LicenciaService implements ILicenciaService {
     @Transactional
     public LicenciaResponseRecord emitirLicencia(LicenciaRecord req) {
         Titular titular = titularService.obtenerPorId(req.titularId());
-
+        if (licenciaRepo.existsByTitularIdAndClaseAndVigenteTrueAndFechaVencimientoAfter(
+                req.titularId(), req.clase(), LocalDate.now())) {
+            throw new ResourceAlreadyExistsException(
+                    "No es posible emitir licencia de clase " + req.clase() +
+                            " para el titular con id " + req.titularId() +
+                            ". Hay una vigente, debe renovarla."
+            );
+        }
         licenciaHelper.validarClaseBasica(req.clase());
         licenciaHelper.validarEdadMinima(titular);
         int vigencia = licenciaHelper.calcularVigencia(titular);
