@@ -18,6 +18,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
@@ -72,6 +74,27 @@ public class LicenciaService implements ILicenciaService {
                 .build();
 
         return LicenciaResponseRecord.fromEntity(licenciaRepo.save(licencia));
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public List<LicenciaResponseRecord> listarLicenciasVencidas() {
+        LocalDate hoy = LocalDate.now();
+        return licenciaRepo.findByFechaVencimientoBefore(hoy).stream()
+                .map(LicenciaResponseRecord::fromEntity)
+                .collect(Collectors.toList());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public long contarLicenciasVencidas() {
+        return licenciaRepo.countByFechaVencimientoBefore(LocalDate.now());
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public long contarTotalLicenciasEmitidas() {
+        return licenciaRepo.count();
     }
 }
 

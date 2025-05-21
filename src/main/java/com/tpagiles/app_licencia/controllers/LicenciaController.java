@@ -9,6 +9,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import java.util.List;
 
 @RestController
 @RequiredArgsConstructor
@@ -16,9 +17,24 @@ public class LicenciaController implements LicenciaApi {
 
     private final ILicenciaService licenciaService;
 
-    @PostMapping
+    @Override
     public ResponseEntity<LicenciaResponseRecord> emitirLicencia(@Valid @RequestBody LicenciaRecord record) {
         LicenciaResponseRecord resp = licenciaService.emitirLicencia(record);
         return ResponseEntity.status(HttpStatus.CREATED).body(resp);
+    }
+    @Override
+    public ResponseEntity<List<LicenciaResponseRecord>> listarVencidas() {
+        List<LicenciaResponseRecord> list = licenciaService.listarLicenciasVencidas();
+        return ResponseEntity.ok(list);
+    }
+
+    @Override
+    public ResponseEntity<Long> contarLicenciasVencidas() {
+        return ResponseEntity.ok(licenciaService.contarLicenciasVencidas());
+    }
+
+    @Override
+    public ResponseEntity<Long> contarTotalLicenciasEmitidas() {
+        return ResponseEntity.ok(licenciaService.contarTotalLicenciasEmitidas());
     }
 }

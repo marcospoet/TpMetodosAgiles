@@ -31,4 +31,8 @@ public class TitularController implements TitularApi {
         var titular = titularService.obtenerPorId(id);
         return ResponseEntity.ok(TitularResponseRecord.fromEntity(titular));
     }
+    @GetMapping("/count")
+    public ResponseEntity<Long> contarTitulares() {
+        return ResponseEntity.ok(titularService.contarTitulares());
+    }
 }

@@ -67,4 +67,10 @@ public class TitularService implements ITitularService{
         titularRepository.deleteById(id);
     }
 
+    @Transactional(readOnly = true)
+    @Override
+    public long contarTitulares() {
+        return titularRepository.count();
+    }
+
 }
