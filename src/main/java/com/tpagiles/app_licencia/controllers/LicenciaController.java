@@ -3,8 +3,12 @@ package com.tpagiles.app_licencia.controllers;
 import com.tpagiles.app_licencia.api.LicenciaApi;
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
+import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
+import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.service.ILicenciaService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -36,5 +40,15 @@ public class LicenciaController implements LicenciaApi {
     @Override
     public ResponseEntity<Long> contarTotalLicenciasEmitidas() {
         return ResponseEntity.ok(licenciaService.contarTotalLicenciasEmitidas());
+    }
+
+    @Override
+    public ResponseEntity<TitularConLicenciasResponseRecord> buscarPorTipoYNumeroDocumento(
+            @RequestParam @NotNull TipoDocumento tipoDocumento,
+            @RequestParam @NotBlank String numeroDocumento
+    ) {
+        TitularConLicenciasResponseRecord dto =
+                licenciaService.buscarPorTipoYNumeroDocumento(tipoDocumento, numeroDocumento);
+        return ResponseEntity.ok(dto);
     }
 }

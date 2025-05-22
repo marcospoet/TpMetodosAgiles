@@ -12,13 +12,16 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
 
 @Tag(name = "Titulares", description = "API para gestión de titulares")
 @RequestMapping("/api/titulares")
+@Validated
 public interface TitularApi {
 
     @Operation(
@@ -133,14 +136,15 @@ public interface TitularApi {
 
     @Operation(
             summary     = "Obtener Titular por ID",
-            description = "Recupera los datos de un Titular existente a partir de su identificador único.",
-            tags        = { "Titulares" },
+            description = "Recupera los datos de un Titular existente a partir de su identificador único. " +
+                    "El parámetro `id` debe ser un número entero positivo.",
             parameters  = {
                     @Parameter(
                             name        = "id",
-                            description = "ID del Titular a recuperar",
-                            required    = true,
                             in          = ParameterIn.PATH,
+                            description = "ID del Titular a recuperar (debe ser ≥ 1)",
+                            required    = true,
+                            schema      = @Schema(type = "integer", format = "int64", minimum = "1"),
                             example     = "100"
                     )
             },
@@ -154,18 +158,35 @@ public interface TitularApi {
                                     examples  = @ExampleObject(
                                             name  = "GetResponse",
                                             value = """
-                            {
-                              "id": 100,
-                              "nombre": "Ana",
-                              "apellido": "García",
-                              "fechaNacimiento": "1985-05-20",
-                              "tipoDocumento": "DNI",
-                              "numeroDocumento": "87654321",
-                              "grupoSanguineo": "AB",
-                              "factorRh": "NEGATIVO",
-                              "direccion": "Av. Siempre Viva 742",
-                              "donanteOrganos": false
-                            }"""
+                    {
+                      "id": 100,
+                      "nombre": "Ana",
+                      "apellido": "García",
+                      "fechaNacimiento": "1985-05-20",
+                      "tipoDocumento": "DNI",
+                      "numeroDocumento": "87654321",
+                      "grupoSanguineo": "AB",
+                      "factorRh": "NEGATIVO",
+                      "direccion": "Av. Siempre Viva 742",
+                      "donanteOrganos": false
+                    }"""
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description  = "ID inválido: violación de @Positive",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(implementation = ErrorResponse.class),
+                                    examples  = @ExampleObject(
+                                            name  = "BadRequest",
+                                            value = """
+                    {
+                      "timestamp": "2025-05-21T17:30:00Z",
+                      "status": 400,
+                      "message": "obtenerTitular.id: must be greater than 0"
+                    }"""
                                     )
                             )
                     ),
@@ -178,17 +199,19 @@ public interface TitularApi {
                                     examples  = @ExampleObject(
                                             name  = "NotFound",
                                             value = """
-                            {
-                              "timestamp": "2025-05-16T14:03:00Z",
-                              "status": 404,
-                              "message": "No se encontró el Titular con ID: 100"
-                            }"""
+                    {
+                      "timestamp": "2025-05-21T17:31:00Z",
+                      "status": 404,
+                      "message": "No se encontró el Titular con ID: 100"
+                    }"""
                                     )
                             )
                     )
             }
     )
     @GetMapping("/{id}")
-    ResponseEntity<TitularResponseRecord> obtenerTitular(@PathVariable Long id);
+    ResponseEntity<TitularResponseRecord> obtenerTitular(
+            @PathVariable @Positive Long id
+    );
 
 }

@@ -2,11 +2,14 @@ package com.tpagiles.app_licencia.service.impl;
 
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
+import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
+import com.tpagiles.app_licencia.dto.TitularResponseRecord;
 import com.tpagiles.app_licencia.exception.ResourceAlreadyExistsException;
 import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
 import com.tpagiles.app_licencia.model.Licencia;
 import com.tpagiles.app_licencia.model.Titular;
 import com.tpagiles.app_licencia.model.Usuario;
+import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.repository.LicenciaRepository;
 import com.tpagiles.app_licencia.repository.UsuarioRepository;
 import com.tpagiles.app_licencia.service.ILicenciaService;
@@ -96,6 +99,36 @@ public class LicenciaService implements ILicenciaService {
     public long contarTotalLicenciasEmitidas() {
         return licenciaRepo.count();
     }
+    @Transactional(readOnly = true)
+    @Override
+    public TitularConLicenciasResponseRecord buscarPorTipoYNumeroDocumento(
+            TipoDocumento tipoDocumento,
+            String numeroDocumento
+    ) {
+        // 1. Obtenemos todas las licencias
+        List<Licencia> licencias = licenciaRepo
+                .findByTitularTipoDocumentoAndTitularNumeroDocumento(tipoDocumento, numeroDocumento);
+
+        if (licencias.isEmpty()) {
+            throw new ResourceNotFoundException(
+                    "No se encontró ningún titular con " +
+                            tipoDocumento + " " + numeroDocumento
+            );
+        }
+
+        // 2. Extraemos la entidad Titular del primer elemento
+        var titularEntity = licencias.getFirst().getTitular();
+
+        // 3. Convertimos a DTOs
+        TitularResponseRecord titularDto = TitularResponseRecord.fromEntity(titularEntity);
+        List<LicenciaResponseRecord> licenciasDto = licencias.stream()
+                .map(LicenciaResponseRecord::fromEntityAlt)
+                .toList();
+
+        // 4. Devolvemos el record que agrupa ambos
+        return TitularConLicenciasResponseRecord.from(titularDto, licenciasDto);
+    }
+
 }
 
 

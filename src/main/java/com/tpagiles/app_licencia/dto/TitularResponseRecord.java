@@ -22,7 +22,6 @@ import java.time.LocalDate;
 })
 @Schema(description = "Datos de un Titular ya registrado")
 public record TitularResponseRecord(
-
         @Schema(description = "Identificador único del titular", example = "37")
         Long id,
 

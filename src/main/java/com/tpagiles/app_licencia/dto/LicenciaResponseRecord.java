@@ -77,4 +77,19 @@ public record LicenciaResponseRecord(
                 lic.getEmisor().getId()
         );
     }
+    public static LicenciaResponseRecord fromEntityAlt(Licencia lic) {
+        return new LicenciaResponseRecord(
+                lic.getId(),
+                null,
+                lic.getClase().name(),
+                lic.getVigenciaAnios(),
+                lic.getFechaEmision(),
+                lic.getFechaVencimiento(),
+                lic.getCosto(),
+                lic.getNumeroCopia(),
+                lic.getMotivoCopia(),
+                lic.isVigente(),
+                lic.getEmisor().getId()
+        );
+    }
 }

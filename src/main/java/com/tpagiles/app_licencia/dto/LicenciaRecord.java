@@ -2,15 +2,13 @@ package com.tpagiles.app_licencia.dto;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
-import com.tpagiles.app_licencia.model.Licencia;
-import com.tpagiles.app_licencia.model.Titular;
-import com.tpagiles.app_licencia.model.Usuario;
 import com.tpagiles.app_licencia.model.enums.ClaseLicencia;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.Size;
+import lombok.Builder;
 
 @JsonInclude(JsonInclude.Include.NON_NULL)
 @JsonPropertyOrder({
@@ -21,6 +19,7 @@ import jakarta.validation.constraints.Size;
         "emisor"
 })
 @Schema(description = "Datos necesarios para emitir una licencia (clases A o B)")
+@Builder
 public record LicenciaRecord(
 
         @Schema(
@@ -64,13 +63,4 @@ public record LicenciaRecord(
         @NotBlank(message = "Debe indicar el username del emisor")
         String emisor
 ) {
-        public Licencia toEntity(Titular titular, Usuario emisor) {
-                return Licencia.builder()
-                        .titular(titular)
-                        .clase(this.clase)
-                        .numeroCopia(this.numeroCopia)
-                        .motivoCopia(this.motivoCopia)
-                        .emisor(emisor)
-                        .build();
-        }
 }

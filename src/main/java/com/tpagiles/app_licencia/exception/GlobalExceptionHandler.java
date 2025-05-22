@@ -1,6 +1,7 @@
 package com.tpagiles.app_licencia.exception;
 
 import com.tpagiles.app_licencia.dto.ErrorResponse;
+import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
@@ -45,6 +46,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.CONFLICT)
                 .body(buildError(HttpStatus.CONFLICT, ex.getMessage()));
+    }
+
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<ErrorResponse> handleConstraintViolation(ConstraintViolationException ex) {
+        // Construimos un mensaje con todas las violaciones
+        String mensaje = ex.getConstraintViolations()
+                .stream()
+                .map(v -> {
+                    String param = v.getPropertyPath().toString();
+                    return param + ": " + v.getMessage();
+                })
+                .reduce((a, b) -> a + "; " + b)
+                .orElse(ex.getMessage());
+
+        logger.error("ConstraintViolation: {}", mensaje);
+        return ResponseEntity
+                .status(HttpStatus.BAD_REQUEST)
+                .body(buildError(HttpStatus.BAD_REQUEST, mensaje));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
