@@ -1,8 +1,10 @@
 package com.tpagiles.app_licencia.api;
 
 import com.tpagiles.app_licencia.dto.ErrorResponse;
+import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
 import com.tpagiles.app_licencia.dto.TitularRecord;
 import com.tpagiles.app_licencia.dto.TitularResponseRecord;
+import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
@@ -12,6 +14,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.parameters.RequestBody;
 import io.swagger.v3.oas.annotations.responses.ApiResponse;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -213,5 +217,133 @@ public interface TitularApi {
     ResponseEntity<TitularResponseRecord> obtenerTitular(
             @PathVariable @Positive Long id
     );
+
+    @Operation(
+            summary     = "Contar titulares registrados",
+            description = "Devuelve el número total de titulares registrados en el sistema.",
+            tags        = { "Titulares" },
+            responses   = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description  = "Conteo exitoso",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(type = "integer", format = "int64", example = "42")
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "500",
+                            description  = "Error interno del servidor",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(implementation = ErrorResponse.class),
+                                    examples  = @ExampleObject(
+                                            name  = "ServerError",
+                                            value = """
+                                            {
+                                              "timestamp": "2025-05-22T14:00:00Z",
+                                              "status": 500,
+                                              "message": "Error interno del servidor"
+                                            }"""
+                                    )
+                            )
+                    )
+            }
+    )
+    @GetMapping("/count")
+    ResponseEntity<Long> contarTitulares();
+
+
+    @Operation(
+            summary     = "Obtener titular con sus licencias",
+            description = "Recupera los datos del titular"
+                    + "por tipo y número de documento. "
+                    + "El parámetro `tipoDocumento` no puede ser nulo y `numeroDocumento` no puede estar vacío.",
+            parameters = {
+                    @Parameter(
+                            name        = "tipoDocumento",
+                            in          = ParameterIn.QUERY,
+                            description = "Tipo de documento del titular (DNI, LC, PASAPORTE, …)",
+                            required    = true,
+                            schema      = @Schema(implementation = TipoDocumento.class),
+                            example     = "DNI"
+                    ),
+                    @Parameter(
+                            name        = "numeroDocumento",
+                            in          = ParameterIn.QUERY,
+                            description = "Número de documento del titular",
+                            required    = true,
+                            schema      = @Schema(type = "string"),
+                            example     = "12345678"
+                    )
+            },
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description  = "Titular y sus licencias encontrados",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(implementation = TitularConLicenciasResponseRecord.class),
+                                    examples  = @ExampleObject(
+                                            name  = "TitularConLicencias",
+                                            value = """                             
+                                      "titular": {
+                                        "id": 1,
+                                        "nombre": "Juan",
+                                        "apellido": "Pérez",
+                                        "fechaNacimiento": "1990-05-15",
+                                        "tipoDocumento": "DNI",
+                                        "numeroDocumento": "12345678",
+                                        "grupoSanguineo": "O",
+                                        "factorRh": "POSITIVO",
+                                        "direccion": "Av. Siempre Viva 742",
+                                        "donanteOrganos": true
+                                      }
+                                    """
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "400",
+                            description  = "Parámetros inválidos (@NotNull o @NotBlank)",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(implementation = ErrorResponse.class),
+                                    examples  = @ExampleObject(
+                                            name  = "BadRequestParams",
+                                            value = """
+                                            {
+                                              "timestamp": "2025-05-22T12:00:00Z",
+                                              "status": 400,
+                                              "message": "buscarPorTipoYNumeroDocumento.tipoDocumento: must not be null; numeroDocumento: must not be blank"
+                                            }"""
+                                    )
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description  = "Titular no encontrado",
+                            content      = @Content(
+                                    mediaType = "application/json",
+                                    schema    = @Schema(implementation = ErrorResponse.class),
+                                    examples  = @ExampleObject(
+                                            name  = "NotFoundTitular",
+                                            value = """
+                                            {
+                                              "timestamp": "2025-05-22T12:01:00Z",
+                                              "status": 404,
+                                              "message": "No se encontró ningún titular con DNI 12345678"
+                                            }"""
+                                    )
+                            )
+                    )
+            }
+    )
+    @GetMapping(params = { "tipoDocumento", "numeroDocumento" })
+    ResponseEntity<TitularResponseRecord> buscarPorTipoYNumeroDocumento(
+            @RequestParam @NotNull TipoDocumento tipoDocumento,
+            @RequestParam @NotBlank String numeroDocumento
+    );
+
 
 }

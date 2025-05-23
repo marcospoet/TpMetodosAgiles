@@ -4,6 +4,7 @@ import com.tpagiles.app_licencia.dto.TitularRecord;
 import com.tpagiles.app_licencia.exception.ResourceAlreadyExistsException;
 import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
 import com.tpagiles.app_licencia.model.Titular;
+import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.repository.TitularRepository;
 import com.tpagiles.app_licencia.service.ITitularService;
 import org.springframework.transaction.annotation.Transactional;
@@ -71,6 +72,16 @@ public class TitularService implements ITitularService{
     @Override
     public long contarTitulares() {
         return titularRepository.count();
+    }
+
+    @Transactional(readOnly = true)
+    @Override
+    public Titular obtenerPorTipoYNumeroDocumento(TipoDocumento tipoDocumento,
+                                                  String numeroDocumento) {
+        return titularRepository
+                .findByTipoDocumentoAndNumeroDocumento(tipoDocumento, numeroDocumento)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Titular no encontrado con " + tipoDocumento + " Nº: " + numeroDocumento));
     }
 
 }

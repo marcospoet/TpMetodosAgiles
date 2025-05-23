@@ -3,9 +3,9 @@ package com.tpagiles.app_licencia.controllers;
 import com.tpagiles.app_licencia.api.TitularApi;
 import com.tpagiles.app_licencia.dto.TitularRecord;
 import com.tpagiles.app_licencia.dto.TitularResponseRecord;
+import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.service.ITitularService;
 import jakarta.validation.Valid;
-import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
@@ -16,7 +16,7 @@ import org.springframework.web.bind.annotation.*;
 public class TitularController implements TitularApi {
 
     private final ITitularService titularService;
-
+    @Override
     public ResponseEntity<TitularResponseRecord> crearTitular(
             @Valid @RequestBody TitularRecord record
     ) {
@@ -25,13 +25,24 @@ public class TitularController implements TitularApi {
                 .status(HttpStatus.CREATED)
                 .body(TitularResponseRecord.fromEntity(titular));
     }
-
-    public ResponseEntity<TitularResponseRecord> obtenerTitular(@PathVariable @Positive Long id) {
+    @Override
+    public ResponseEntity<TitularResponseRecord> obtenerTitular(@PathVariable Long id) {
         var titular = titularService.obtenerPorId(id);
         return ResponseEntity.ok(TitularResponseRecord.fromEntity(titular));
     }
-    @GetMapping("/count")
+
+    @Override
     public ResponseEntity<Long> contarTitulares() {
         return ResponseEntity.ok(titularService.contarTitulares());
     }
+
+    @Override
+    public ResponseEntity<TitularResponseRecord> buscarPorTipoYNumeroDocumento(
+            @RequestParam TipoDocumento tipoDocumento,
+            @RequestParam String numeroDocumento) {
+
+        var titular = titularService.obtenerPorTipoYNumeroDocumento(tipoDocumento, numeroDocumento);
+        return ResponseEntity.ok(TitularResponseRecord.fromEntity(titular));
+    }
+
 }
