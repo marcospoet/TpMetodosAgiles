@@ -1,48 +1,74 @@
 package com.tpagiles.app_licencia.service.helper;
 
 import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
+import com.tpagiles.app_licencia.model.TarifarioLicencia;
 import com.tpagiles.app_licencia.model.enums.ClaseLicencia;
 import com.tpagiles.app_licencia.repository.TarifarioLicenciaRepository;
 import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.DependsOn;
 import org.springframework.stereotype.Component;
 
+import java.util.Collections;
 import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @Component
+@DependsOn("dataSourceScriptDatabaseInitializer")
 @RequiredArgsConstructor
 public class CostoLicenciaHelper {
 
     private final TarifarioLicenciaRepository tarifarioLicenciaRepository;
+
     /**
-     * por si necesitan un ejemplo visual del map. Att: wizard.
-     * tarifas = {
-     *   A → { 1 → 100.0,  5 → 450.0 },
-     *   B → { 1 → 120.0,  3 → 300.0 }
-     *   // C y D probablemente sin clave si no hay datos
-     * }
+     * Gasto administrativo por defecto (inyectable desde properties).
      */
-    private final Map<ClaseLicencia, Map<Integer, Double>> tarifas = new EnumMap<>(ClaseLicencia.class);
-    private static final double GASTOS_ADMIN = 8.0;
+    @Value("${app.licencia.gastos-admin:8.0}")
+    private double gastosAdmin;
+
+    /**
+     * Mapa inmutable:
+     *   ClaseLicencia → (VigenciaAños → CostoBase)
+     */
+    private Map<ClaseLicencia, Map<Integer, Double>> tarifas;
 
     @PostConstruct
-    private void cargarTarifas() {
-        tarifarioLicenciaRepository.findAll().forEach(t ->
-                tarifas
-                        .computeIfAbsent(t.getClaseLicencia(), c -> new HashMap<>())
-                        .put(t.getVigenciaAnios(), t.getCosto())
-        );
+    private void init() {
+        // Cargamos y agrupamos todas las filas en un EnumMap inmutable
+        Map<ClaseLicencia, Map<Integer, Double>> cargadas =
+                tarifarioLicenciaRepository.findAll().stream()
+                        .collect(Collectors.groupingBy(
+                                TarifarioLicencia::getClaseLicencia,
+                                () -> new EnumMap<>(ClaseLicencia.class),
+                                Collectors.toUnmodifiableMap(
+                                        TarifarioLicencia::getVigenciaAnios,
+                                        TarifarioLicencia::getCosto
+                                )
+                        ));
+
+        this.tarifas = Collections.unmodifiableMap(cargadas);
     }
 
+    /**
+     * Devuelve el costo total = costo base + gastosAdmin.
+     *
+     * @throws ResourceNotFoundException si no existe tarifa para (clase, años)
+     */
     public double obtenerCosto(ClaseLicencia clase, int anios) {
-        Map<Integer, Double> porVigencia = tarifas.get(clase);
-        if (porVigencia == null || !porVigencia.containsKey(anios)) {
+        Map<Integer, Double> porVigencia = tarifas.getOrDefault(clase, Collections.emptyMap());
+        Double costoBase = porVigencia.get(anios);
+        if (costoBase == null) {
+            Set<Integer> opciones = porVigencia.keySet();
             throw new ResourceNotFoundException(
-                    "Tarifa no encontrada para clase " + clase + " y vigencia " + anios + " años"
+                    String.format(
+                            "Tarifa no encontrada para clase %s y vigencia %d años. Vigencias disponibles: %s",
+                            clase, anios, opciones
+                    )
             );
         }
-        return porVigencia.get(anios) + GASTOS_ADMIN;
+        return costoBase + gastosAdmin;
     }
 }
