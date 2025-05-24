@@ -8,41 +8,39 @@ import com.tpagiles.app_licencia.model.Titular;
 import com.tpagiles.app_licencia.model.enums.FactorRh;
 import com.tpagiles.app_licencia.model.enums.GrupoSanguineo;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
-import com.tpagiles.app_licencia.repository.UsuarioRepository;
-import com.tpagiles.app_licencia.repository.TarifarioLicenciaRepository;
 import com.tpagiles.app_licencia.service.ITitularService;
+import com.tpagiles.app_licencia.service.JwtService;
+import io.jsonwebtoken.impl.DefaultClaims;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.beans.factory.annotation.Autowired;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
+import static org.mockito.BDDMockito.given;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @WebMvcTest(TitularController.class)
-@AutoConfigureMockMvc
-
-@MockitoBean(types = {
-        UsuarioRepository.class,
-        TarifarioLicenciaRepository.class
-})
+@AutoConfigureMockMvc(addFilters = false)  // deshabilito filtros de seguridad para no inyectar JwtAuthenticationFilter
 class TitularControllerTest {
 
     @Autowired
     private MockMvc mvc;
 
-    // sigue siendo un mock de tu servicio
     @MockitoBean
     private ITitularService titularService;
+
+    @MockitoBean
+    private JwtService jwtService;          // para que no falte el bean en el contexto
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -52,6 +50,12 @@ class TitularControllerTest {
 
     @BeforeEach
     void setup() {
+        // preparo un JWT válido (no se usa en el test porque addFilters=false)
+        given(jwtService.validateToken(any())).willReturn(true);
+        given(jwtService.getSubject(any())).willReturn("admin@municipio.gob");
+        DefaultClaims claims = new DefaultClaims();
+        claims.put("roles", List.of("SUPER_USER"));
+        given(jwtService.parseClaims(any())).willReturn(claims);
         validRecord = new TitularRecord(
                 "Ana", "García",
                 LocalDate.of(1985, 5, 20),
@@ -87,7 +91,7 @@ class TitularControllerTest {
         entidad.setApellido(expectedResponse.apellido());
         entidad.setFechaNacimiento(expectedResponse.fechaNacimiento());
 
-        when(titularService.createTitular(any())).thenReturn(entidad);
+        given(titularService.createTitular(any())).willReturn(entidad);
 
         mvc.perform(post("/api/titulares")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -119,8 +123,8 @@ class TitularControllerTest {
     @Test
     @DisplayName("POST /api/titulares → 409 CONFLICT por DNI duplicado")
     void crearTitular_duplicate() throws Exception {
-        when(titularService.createTitular(any()))
-                .thenThrow(new ResourceAlreadyExistsException("Ya existe un Titular con documento: 87654321"));
+        given(titularService.createTitular(any()))
+                .willThrow(new ResourceAlreadyExistsException("Ya existe un Titular con documento: 87654321"));
 
         mvc.perform(post("/api/titulares")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -133,8 +137,8 @@ class TitularControllerTest {
     @Test
     @DisplayName("POST /api/titulares → 500 INTERNAL SERVER ERROR genérico")
     void crearTitular_unexpectedError() throws Exception {
-        when(titularService.createTitular(any()))
-                .thenThrow(new RuntimeException("boom"));
+        given(titularService.createTitular(any()))
+                .willThrow(new RuntimeException("boom"));
 
         mvc.perform(post("/api/titulares")
                         .contentType(MediaType.APPLICATION_JSON)
