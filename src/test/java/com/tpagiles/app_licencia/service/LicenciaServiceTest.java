@@ -4,6 +4,10 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import java.time.LocalDate;
+import java.util.List;
+import java.util.Optional;
+
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
 import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
@@ -13,8 +17,8 @@ import com.tpagiles.app_licencia.model.Licencia;
 import com.tpagiles.app_licencia.model.Titular;
 import com.tpagiles.app_licencia.model.Usuario;
 import com.tpagiles.app_licencia.model.enums.ClaseLicencia;
-import com.tpagiles.app_licencia.model.enums.FactorRh;
 import com.tpagiles.app_licencia.model.enums.GrupoSanguineo;
+import com.tpagiles.app_licencia.model.enums.FactorRh;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.repository.LicenciaRepository;
 import com.tpagiles.app_licencia.repository.UsuarioRepository;
@@ -27,9 +31,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.*;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @ExtendWith(MockitoExtension.class)
 class LicenciaServiceTest {
@@ -59,6 +60,7 @@ class LicenciaServiceTest {
 
     @BeforeEach
     void setUp() {
+        // --- Titular de prueba ---
         titular = new Titular();
         titular.setId(10L);
         titular.setNombre("Juan");
@@ -71,19 +73,22 @@ class LicenciaServiceTest {
         titular.setDireccion("Calle Falsa 123");
         titular.setDonanteOrganos(true);
 
+        // --- Emisor de prueba, ahora con mail ---
         emisor = new Usuario();
         emisor.setId(5L);
-        emisor.setUsername("admin");
+        emisor.setNombre("admin");
+        emisor.setMail("admin@municipio.gob");  // ← importante
 
+        // --- Record: el último campo es ahora el mail del emisor ---
         record = new LicenciaRecord(
                 titular.getId(),
                 ClaseLicencia.A,
                 null,
                 null,
-                emisor.getUsername()
+                emisor.getMail()
         );
 
-        // Preparamos una licencia “real” con ese titular completo
+        // --- Entidad de licencia esperada ---
         licenciaEntity = Licencia.builder()
                 .id(20L)
                 .titular(titular)
@@ -97,7 +102,6 @@ class LicenciaServiceTest {
                 .build();
     }
 
-
     @Test
     @DisplayName("emitirLicencia → éxito, retorna LicenciaResponseRecord")
     void emitirLicencia_success() {
@@ -110,8 +114,10 @@ class LicenciaServiceTest {
         doNothing().when(licenciaHelper).validarEdadMinima(titular);
         when(licenciaHelper.calcularVigencia(titular)).thenReturn(5);
         when(costoHelper.obtenerCosto(record.clase(), 5)).thenReturn(100.0);
-        when(usuarioRepo.findByUsername(record.emisor()))
-                .thenReturn(java.util.Optional.of(emisor));
+
+        // ← Aquí cambiamos a findByMail(...)
+        when(usuarioRepo.findByMail(record.emisor()))
+                .thenReturn(Optional.of(emisor));
         when(licenciaRepo.save(any(Licencia.class)))
                 .thenReturn(licenciaEntity);
 
@@ -146,8 +152,10 @@ class LicenciaServiceTest {
                 .thenReturn(false);
         when(licenciaHelper.calcularVigencia(titular)).thenReturn(5);
         when(costoHelper.obtenerCosto(record.clase(), 5)).thenReturn(100.0);
-        when(usuarioRepo.findByUsername(record.emisor()))
-                .thenReturn(java.util.Optional.empty());
+
+        // ← ahora buscamos por mail y devolvemos Optional.empty()
+        when(usuarioRepo.findByMail(record.emisor()))
+                .thenReturn(Optional.empty());
 
         assertThrows(ResourceNotFoundException.class,
                 () -> service.emitirLicencia(record));

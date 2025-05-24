@@ -111,7 +111,7 @@ public class LicenciaService implements ILicenciaService {
 
         if (licencias.isEmpty()) {
             throw new ResourceNotFoundException(
-                    "No se encontró ningún titular con " +
+                    "No se encontró ningún titular que tenga al menos una licencia con " +
                             tipoDocumento + " " + numeroDocumento
             );
         }

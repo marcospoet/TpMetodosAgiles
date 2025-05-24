@@ -8,7 +8,6 @@ import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
 import io.swagger.v3.oas.annotations.enums.ParameterIn;
-import io.swagger.v3.oas.annotations.enums.SecuritySchemeType;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.ExampleObject;
@@ -34,8 +33,8 @@ import java.util.List;
 public interface LicenciaApi {
 
     @Operation(
-            summary     = "Emitir licencia (solo ADMIN)",
-            description = "Emite una licencia de clase A o B para un titular existente. Se debe indicar el emisor. Requiere rol ADMIN.",
+            summary     = "Emitir licencia (solo SUPER_USER)",
+            description = "Emite una licencia de clase A o B para un titular existente. Se debe indicar el emisor. Requiere rol SUPER_USER.",
             security    = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "201", description = "Licencia emitida exitosamente"),
@@ -98,8 +97,8 @@ public interface LicenciaApi {
     );
 
     @Operation(
-            summary     = "Listar licencias vencidas (OPERADOR, ADMIN)",
-            description = "Recupera todas las licencias cuya fecha de vencimiento sea anterior al día actual. Requiere rol OPERADOR o ADMIN.",
+            summary     = "Listar licencias vencidas (OPERADOR, SUPER_USER)",
+            description = "Recupera todas las licencias cuya fecha de vencimiento sea anterior al día actual. Requiere rol OPERADOR o SUPER_USER.",
             security    = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Listado de licencias vencidas",
@@ -125,8 +124,8 @@ public interface LicenciaApi {
     ResponseEntity<List<LicenciaResponseRecord>> listarVencidas();
 
     @Operation(
-            summary     = "Contar licencias vencidas (OPERADOR, ADMIN)",
-            description = "Devuelve la cantidad total de licencias que han vencido. Requiere rol OPERADOR o ADMIN.",
+            summary     = "Contar licencias vencidas (OPERADOR, SUPER_USER)",
+            description = "Devuelve la cantidad total de licencias que han vencido. Requiere rol OPERADOR o SUPER_USER.",
             security    = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Cantidad de licencias vencidas",
@@ -145,8 +144,8 @@ public interface LicenciaApi {
     ResponseEntity<Long> contarLicenciasVencidas();
 
     @Operation(
-            summary     = "Contar total de licencias emitidas (OPERADOR, ADMIN)",
-            description = "Devuelve el total de licencias emitidas. Requiere rol OPERADOR o ADMIN.",
+            summary     = "Contar total de licencias emitidas (OPERADOR, SUPER_USER)",
+            description = "Devuelve el total de licencias emitidas. Requiere rol OPERADOR o SUPER_USER.",
             security    = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "200", description = "Total de licencias emitidas",
@@ -165,10 +164,10 @@ public interface LicenciaApi {
     ResponseEntity<Long> contarTotalLicenciasEmitidas();
 
     @Operation(
-            summary     = "Obtener titular con sus licencias (OPERADOR, ADMIN)",
+            summary     = "Obtener un titular con al menos una licencia (OPERADOR, SUPER_USER)",
             description = """
             Recupera los datos del titular y su lista completa de licencias
-            filtrando por tipo y número de documento. Requiere rol OPERADOR o ADMIN.
+            filtrando por tipo y número de documento. Requiere rol OPERADOR o SUPER_USER.
             El parámetro `tipoDocumento` no puede ser nulo y `numeroDocumento` no puede estar vacío.
             """,
             security    = @SecurityRequirement(name = "bearerAuth"),

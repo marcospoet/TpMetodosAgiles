@@ -16,27 +16,26 @@ import java.util.Set;
 public class DataInitializer {
 
     private final UsuarioRepository repo;
-    private final PasswordEncoder encoder;
 
     @Bean
-    public ApplicationRunner init() {
+    public ApplicationRunner init(PasswordEncoder encoder) {
         return args -> {
-            if (!repo.existsByMail("admin")) {
+            if (!repo.existsByMail("admin@municipio.gob")) {
                 repo.save(new Usuario(
                         null,
                         "Administrador",
                         "Sistema",
-                        "admin@municipio.gob",                                // mail
+                        "admin@municipio.gob",
                         encoder.encode("admin123"),
                         Set.of(Rol.SUPER_USER)
                 ));
             }
-            if (!repo.existsByMail("operador")) {
+            if (!repo.existsByMail("operador@municipio.gob")) {
                 repo.save(new Usuario(
                         null,
                         "Operador",
                         "Turno1",
-                        "operador@municipio.gob",                            // mail
+                        "operador@municipio.gob",
                         encoder.encode("operador"),
                         Set.of(Rol.OPERADOR)
                 ));
@@ -44,3 +43,4 @@ public class DataInitializer {
         };
     }
 }
+
