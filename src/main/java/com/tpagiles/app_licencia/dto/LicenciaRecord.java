@@ -57,7 +57,7 @@ public record LicenciaRecord(
 
         @Schema(
                 description = "Username del usuario que emite la licencia",
-                example = "admin",
+                example = "admin@municipio.gob",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
         @NotBlank(message = "Debe indicar el username del emisor")
