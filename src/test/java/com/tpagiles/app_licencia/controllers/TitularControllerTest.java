@@ -51,11 +51,11 @@ class TitularControllerTest {
     @BeforeEach
     void setup() {
         // preparo un JWT válido (no se usa en el test porque addFilters=false)
-        given(jwtService.validateToken(any())).willReturn(true);
-        given(jwtService.getSubject(any())).willReturn("admin@municipio.gob");
-        DefaultClaims claims = new DefaultClaims();
-        claims.put("roles", List.of("SUPER_USER"));
-        given(jwtService.parseClaims(any())).willReturn(claims);
+            given(jwtService.validateToken(any())).willReturn(true);
+            given(jwtService.getSubject(any())).willReturn("admin@municipio.gob");
+            DefaultClaims claims = new DefaultClaims();
+            claims.put("roles", List.of("SUPER_USER"));
+            given(jwtService.parseClaims(any())).willReturn(claims);
         validRecord = new TitularRecord(
                 "Ana", "García",
                 LocalDate.of(1985, 5, 20),
