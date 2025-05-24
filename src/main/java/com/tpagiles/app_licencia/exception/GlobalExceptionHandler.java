@@ -1,10 +1,13 @@
 package com.tpagiles.app_licencia.exception;
 
 import com.tpagiles.app_licencia.dto.ErrorResponse;
+import io.jsonwebtoken.JwtException;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.http.*;
+import org.springframework.security.core.AuthenticationException;
+
 
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
@@ -30,6 +33,14 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.NOT_FOUND)
                 .body(buildError(HttpStatus.NOT_FOUND, ex.getMessage()));
+    }
+
+    @ExceptionHandler({ AuthenticationException.class, JwtException.class })
+    public ResponseEntity<ErrorResponse> handleAuthError(Exception ex) {
+        logger.error("AuthenticationError: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(buildError(HttpStatus.UNAUTHORIZED, "Autenticación inválida o token expirado"));
     }
 
     @ExceptionHandler(ResourceTypeMismatchException.class)

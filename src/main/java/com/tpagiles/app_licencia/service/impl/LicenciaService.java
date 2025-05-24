@@ -60,7 +60,7 @@ public class LicenciaService implements ILicenciaService {
 
         // Usamos ahora el repo directamente para buscar al emisor pero despues seria le IUsuarioService en el sprint 2
         Usuario emisor = usuarioRepo
-                .findByUsername(req.emisor())
+                .findByMail(req.emisor())
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Usuario emisor no encontrado: " + req.emisor())
                 );
