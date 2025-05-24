@@ -33,8 +33,8 @@ import java.util.List;
 public interface LicenciaApi {
 
     @Operation(
-            summary     = "Emitir licencia (solo SUPER_USER)",
-            description = "Emite una licencia de clase A o B para un titular existente. Se debe indicar el emisor. Requiere rol SUPER_USER.",
+            summary     = "Emitir licencia (OPERADOR, SUPER_USER)",
+            description = "Emite una licencia de clase A o B para un titular existente. Se debe indicar el mail del emisor. Requiere rol SUPER_USER o OPERADOR.",
             security    = @SecurityRequirement(name = "bearerAuth"),
             responses = {
                     @ApiResponse(responseCode = "201", description = "Licencia emitida exitosamente"),
@@ -66,12 +66,6 @@ public interface LicenciaApi {
                           "message": "Titular con id 37 no existe"
                         }"""
                                     )
-                            )
-                    ),
-                    @ApiResponse(responseCode = "403", description = "Forbidden: rol insuficiente",
-                            content = @Content(
-                                    mediaType = "application/json",
-                                    schema    = @Schema(implementation = ErrorResponse.class)
                             )
                     ),
                     @ApiResponse(responseCode = "500", description = "Error interno del servidor",
@@ -168,6 +162,7 @@ public interface LicenciaApi {
             description = """
             Recupera los datos del titular y su lista completa de licencias
             filtrando por tipo y número de documento. Requiere rol OPERADOR o SUPER_USER.
+            Solo muestra titulares que tengan al menos una licencia, si no tiene ninguna devolverá 404.
             El parámetro `tipoDocumento` no puede ser nulo y `numeroDocumento` no puede estar vacío.
             """,
             security    = @SecurityRequirement(name = "bearerAuth"),

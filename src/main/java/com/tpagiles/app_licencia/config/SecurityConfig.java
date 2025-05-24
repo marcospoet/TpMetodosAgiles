@@ -1,13 +1,13 @@
 package com.tpagiles.app_licencia.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.tpagiles.app_licencia.dto.ErrorResponse;
 import com.tpagiles.app_licencia.model.enums.Rol;
 import com.tpagiles.app_licencia.security.JwtAuthenticationFilter;
-import com.tpagiles.app_licencia.service.impl.UsuarioService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
-import org.springframework.http.HttpMethod;
+import org.springframework.http.*;
 import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -16,7 +16,8 @@ import org.springframework.security.config.annotation.web.configurers.AbstractHt
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.*;
+import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.*;
 
@@ -28,48 +29,63 @@ import java.util.List;
 public class SecurityConfig {
 
     private final JwtAuthenticationFilter jwtFilter;
-    private final UsuarioService usuarioService;
+    private final ErrorResponseFactory factory;
+    private final ObjectMapper mapper;
 
     @Bean
     public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
         http
-                // 1) Habilita CORS para que Swagger UI pueda hacer peticiones desde el navegador
+                // 0) Manejo de errores REST (401 y 403)
+                .exceptionHandling(ex -> ex
+                        .authenticationEntryPoint(restAuthenticationEntryPoint())
+                        .accessDeniedHandler(restAccessDeniedHandler())
+                )
+                // 1) CORS para Swagger UI
                 .cors(Customizer.withDefaults())
-                // 2) Desactiva CSRF (API stateless)
+                // 2) CSRF off (stateless)
                 .csrf(AbstractHttpConfigurer::disable)
-                // 3) Stateless sessions
+                // 3) Sessions stateless
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 4) Rutas publicas y protegidas
+                // 4) Rutas públicas y protegidas
                 .authorizeHttpRequests(auth -> auth
-                        // Exponemos Swagger y OpenAPI sin autenticación
                         .requestMatchers(
                                 "/swagger-ui.html",
                                 "/swagger-ui/**",
                                 "/v3/api-docs/**",
                                 "/docs/**"
                         ).permitAll()
-                        // Autenticación
                         .requestMatchers("/api/auth/**").permitAll()
-                        // Roles
                         .requestMatchers(HttpMethod.GET,  "/api/licencias/**")
                         .hasAnyRole(Rol.OPERADOR.name(), Rol.SUPER_USER.name())
                         .requestMatchers(HttpMethod.POST, "/api/titulares/**")
                         .hasAnyRole(Rol.OPERADOR.name(), Rol.SUPER_USER.name())
                         .anyRequest().hasRole(Rol.SUPER_USER.name())
                 )
-                // 5) Proveedor de usuario y filtro JWT
-                .authenticationProvider(daoAuthProvider())
+                // 5) Filtro JWT
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
     }
 
+    // 401 – no autenticado o token inválido
     @Bean
-    public DaoAuthenticationProvider daoAuthProvider() {
-        var provider = new DaoAuthenticationProvider();
-        provider.setUserDetailsService(usuarioService);
-        provider.setPasswordEncoder(passwordEncoder());
-        return provider;
+    public AuthenticationEntryPoint restAuthenticationEntryPoint() {
+        return (req, res, ex) -> {
+            ErrorResponse err = factory.build(HttpStatus.UNAUTHORIZED, "Token invalido o no proveido");
+            res.setStatus(HttpStatus.UNAUTHORIZED.value());
+            res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            mapper.writeValue(res.getWriter(), err);
+        };
+    }
+
+    @Bean
+    public AccessDeniedHandler restAccessDeniedHandler() {
+        return (req, res, ex) -> {
+            ErrorResponse err = factory.build(HttpStatus.FORBIDDEN, "No tienes permisos suficientes");
+            res.setStatus(HttpStatus.FORBIDDEN.value());
+            res.setContentType(MediaType.APPLICATION_JSON_VALUE);
+            mapper.writeValue(res.getWriter(), err);
+        };
     }
 
     @Bean
@@ -82,19 +98,15 @@ public class SecurityConfig {
         return cfg.getAuthenticationManager();
     }
 
-    /**
-     * Configuración global de CORS para permitir peticiones desde Swagger UI
-     */
     @Bean
     public CorsConfigurationSource corsConfigurationSource() {
-        var config = new CorsConfiguration();
-        config.setAllowedOrigins(List.of("*"));                     // o tu dominio específico
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOrigins(List.of("*"));
         config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
         config.setAllowedHeaders(List.of("*"));
-        config.setExposedHeaders(List.of("Authorization","Link","X-Total-Count")); // si necesitas exponer cabeceras específicas
-
-        var source = new UrlBasedCorsConfigurationSource();
-        source.registerCorsConfiguration("/**", config);
-        return source;
+        config.setExposedHeaders(List.of("Authorization","Link","X-Total-Count"));
+        UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
+        src.registerCorsConfiguration("/**", config);
+        return src;
     }
 }
