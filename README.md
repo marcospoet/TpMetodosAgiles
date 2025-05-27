@@ -1,6 +1,7 @@
 # 🪪 Sistema de Gestión de Licencias de Conducir - Municipalidad de Santa Fe
 
-Este proyecto tiene como objetivo desarrollar un sistema de gestión de licencias de conducir para la Municipalidad de Santa Fe. La aplicación permite emitir, renovar y consultar licencias, así como gestionar titulares y usuarios administrativos.
+Este proyecto tiene como objetivo desarrollar un sistema de gestión de licencias de conducir para la Municipalidad de Santa Fe.  
+La aplicación permite emitir, renovar y consultar licencias, así como gestionar titulares y usuarios administrativos.
 
 ---
 
@@ -23,111 +24,77 @@ El sistema permite realizar las siguientes funcionalidades:
 - Cálculo automático de vigencia y costo según edad, clase y vigencia.
 - Impresión de licencia y comprobante.
 - Alta y modificación de titulares y usuarios.
-- Listados filtrados por estado, nombre, grupo sanguíneo, y condición de donante.
+- Listados filtrados por estado, nombre, grupo sanguíneo y condición de donante.
 - Registro de auditoría con usuario y fecha de cada trámite.
 
 ---
 
 ## 👨‍💻 Metodología de Trabajo
 
-Este proyecto fue desarrollado bajo los principios de **Scrum**, aplicando iteraciones y entregas incrementales. Cada historia de usuario fue planificada, refinada y estimada en base a criterios reales de negocio y riesgos de desarrollo.
+Proyecto desarrollado bajo principios **Scrum**, con iteraciones y entregas incrementales.  
+Cada historia fue planificada, refinada y estimada según valor de negocio y riesgo.
 
 ### 🔁 Sprints
 
-El desarrollo fue organizado en **dos sprints**, aplicando reuniones de planificación, daily meetings y retrospectivas.
+El desarrollo se organizó en **dos sprints** con planning, daily meetings y retrospectivas.
 
 ---
 
 ## 📝 Historias de Usuario
-
-Cada funcionalidad fue tratada como una historia de usuario con su correspondiente prioridad, estimación y riesgos.
-
-Ejemplo de historias:
 
 - `#01` Emitir licencia (Alta)
 - `#02` Calcular vigencia (Alta)
 - `#03` Calcular costo (Media)
 - `#04` Imprimir licencia (Alta)
 - `#05` Renovar licencia (Media)
-- ...
+- …
 
 ---
 
 ## ✅ Buenas Prácticas
 
-- Se utiliza `Conventional Commits` para los mensajes de commit.
-- Se organizan las ramas por tipo de funcionalidad: `feature/`, `fix/`, `refactor/`, etc.
-- Se aplica Clean Code y principios SOLID.
-- Se documentan todas las historias y tareas usando los templates definidos por la cátedra.
+- Mensajes de commit bajo **Conventional Commits**.
+- Ramas por tipo: `feature/`, `fix/`, `refactor/`, …
+- **Clean Code** y principios **SOLID**.
+- Historias y tareas documentadas con los templates de la cátedra.
 
-### 📌 Tipos de commits convencionales
+### 📌 Tipos de commit convencionales
 
-| Tipo        | Descripción                                               | Ejemplo                                               |
-|-------------|-----------------------------------------------------------|--------------------------------------------------------|
-| `feat`      | Nueva funcionalidad                                        | `feat: agregar impresión de comprobante de licencia`   |
-| `fix`       | Corrección de errores                                      | `fix: corregir cálculo de vigencia para menores de 21` |
-| `docs`      | Cambios en documentación                                   | `docs: actualizar README con tabla de tipos de commit` |
-| `style`     | Cambios de formato (espacios, indentación, comas)         | `style: aplicar formato a clase TitularController`     |
-| `refactor`  | Refactor sin cambio de funcionalidad ni bug               | `refactor: mover lógica de cálculo a servicio común`   |
-| `test`      | Agregado o modificación de tests                           | `test: agregar test de validación de edad mínima`      |
-| `chore`     | Tareas menores (configuración, dependencias, scripts)     | `chore: configurar .gitignore para IntelliJ y Maven`   |
-
----
-
-## 🧪 Testing y Calidad
-
-- Validaciones automáticas en backend.
-- Registro de errores y auditoría de cambios.
-- Pruebas manuales durante cada sprint para asegurar funcionalidad y estabilidad.
+| Tipo       | Descripción                               | Ejemplo                                                     |
+|------------|-------------------------------------------|-------------------------------------------------------------|
+| `feat`     | Nueva funcionalidad                       | `feat: agregar impresión de comprobante de licencia`       |
+| `fix`      | Corrección de errores                     | `fix: corregir cálculo de vigencia para menores de 21`     |
+| `docs`     | Documentación                             | `docs: actualizar README con tabla de tipos de commit`     |
+| `style`    | Formato (espacios, indentación, etc.)     | `style: aplicar formato a TitularController`               |
+| `refactor` | Refactor sin cambio de funcionalidad      | `refactor: mover lógica de cálculo a servicio común`       |
+| `test`     | Agregado o modificación de tests          | `test: agregar test de validación de edad mínima`          |
+| `chore`    | Tareas menores (config, deps, scripts)    | `chore: configurar .gitignore para IntelliJ y Maven`       |
+| `build`    | Cambios en sistema de build / contenedores| `build(docker): agregar docker-compose para entorno local` |
 
 ---
 
-## 🧠 Equipo de Trabajo
+## ▶️ Puesta en marcha rápida (Base de datos en Docker, app local)
 
-- Product Owner: Rodrigo Ledesma (Docente)
-- Equipo de desarrollo: Pividori Marcos, Poet Marcos, Cammisi José, Blanche Mateo, Lazzarini Bautista, Ramella Sebastian
+1. **Arranca la base de datos**
 
----
+   ```bash
+   docker compose up -d          # en la carpeta del docker-compose.yml
+   docker compose ps             # verifica que MySQL esté "healthy"
+   ```
 
-## 📂 Estructura del Proyecto
+   phpMyAdmin disponible en [http://localhost:6080](http://localhost:6080)
+   Servidor: **mysql** — Usuario: **root** — Contraseña: *(vacía)*
 
-> ⚠️ *La estructura actual se irá mejorando y evolucionando a medida que avance el desarrollo.*
+2. **Lanza la aplicación**
 
-```plaintext
-📦 src  
- └── 📂 main  
-     ├── 📂 java  
-     │   └── 📂 com.tpagiles.app_licencia  
-     │       ├── 📂 controllers              # Controladores REST  
-     │       ├── 📂 dto                     # Data Transfer Objects  
-     │       ├── 📂 exception               # Manejo de excepciones  
-     │       ├── 📂 model                   # Entidades del dominio  
-     │       │   ├── 📂 enums               # Enumeraciones  
-     │       │   ├── 📄 Licencia.java  
-     │       │   ├── 📄 Persona.java  
-     │       │   ├── 📄 TarifarioLicencia.java  
-     │       │   ├── 📄 Titular.java  
-     │       │   └── 📄 Usuario.java  
-     │       ├── 📂 repository              # Interfaces JPA / DAO  
-     │       ├── 📂 service                 # Lógica de negocio  
-     │       └── 📄 AppLicenciaApplication.java  
-     └── 📂 resources  
-         └── 📄 application.properties      # Configuración de Spring  
+   ```bash
+   ./mvnw spring-boot:run   # o botón Run de IntelliJ
+   ```
 
-```
----
+   Spring se conecta a `jdbc:mysql://localhost:3306/tpAgiles`.
 
-## 📦 Entregables
+3. **Apaga todo al terminar**
 
-- Documento de planificación (Word)
-- Historias refinadas y tareas asignadas
-- Código fuente funcional
-- Presentación de avances por sprint
-- Informe final
-
----
-
-## 📌 Notas Finales
-
-> Este repositorio aplica buenas prácticas de desarrollo ágil, planificación iterativa, documentación continua y uso disciplinado de herramientas de control de versiones con commits convencionales.
-
+   ```bash
+   docker compose down      # --volumes si quieres borrar los datos
+   ```
