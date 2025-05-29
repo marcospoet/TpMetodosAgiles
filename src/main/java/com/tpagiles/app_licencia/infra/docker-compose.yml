@@ -1,42 +1,20 @@
+version: '3.8'
 services:
-  mysql:
-    image: mysql:8.3                      # misma rama 8.x, estable
-    container_name: mysql-tpagiles
-    restart: unless-stopped
-    environment:
-      # nombre de la base que Spring creará al levantar
-      MYSQL_DATABASE: tpAgiles
-      # ⚠️ solo para desarrollo: deja la contraseña de root vacía
-      MYSQL_ALLOW_EMPTY_PASSWORD: "yes"
-      TZ: America/Argentina/Cordoba
-      # Si en algún momento prefieres un usuario dedicado en lugar de root,
-      # descomenta las dos líneas siguientes y cambia application.properties:
-      # MYSQL_USER: usr_app
-      # MYSQL_PASSWORD: usrapp
+  backend:
+    build:
+      context: ../../..          # sube tres niveles hasta donde está pom.xml
+      dockerfile: src/main/java/com/tpagiles/app_licencia/infra/Dockerfile
     ports:
-      - "3306:3306"                       # expone el puerto al host
-    volumes:
-      - mysql_data:/var/lib/mysql         # datos persistentes
-      - ./mysql/initdb/:/docker-entrypoint-initdb.d/:ro   # scripts SQL opcionales
-    healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost --silent"]
-      interval: 10s
-      retries: 5
-      start_period: 20s
-
-  phpmyadmin:
-    image: phpmyadmin/phpmyadmin:latest
-    container_name: phpmyadmin
-    restart: unless-stopped
+      - "8080:8080"
     environment:
-      PMA_HOST: mysql
-      PMA_PORT: 3306
-      UPLOAD_LIMIT: 64M
-      TZ: America/Argentina/Cordoba
-    ports:
-      - "6080:80"
-    depends_on:
-      - mysql
-
-volumes:
-  mysql_data:
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_NAME=${DB_NAME}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - JWT_SECRET=${JWT_SECRET}
+    networks:
+      - app-network
+networks:
+  app-network:
+    driver: bridge
