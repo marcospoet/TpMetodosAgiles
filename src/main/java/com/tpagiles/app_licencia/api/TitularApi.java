@@ -347,5 +347,67 @@ public interface TitularApi {
             @RequestParam @NotBlank String numeroDocumento
     );
 
+    @Operation(
+            summary = "Modificar un Titular por tipo y número de documento",
+            description = "Actualiza los datos de un titular identificándolo por su tipo y número de documento.",
+            parameters = {
+                    @Parameter(
+                            name = "tipoDocumento",
+                            in = ParameterIn.QUERY,
+                            description = "Tipo de documento del titular a modificar",
+                            required = true,
+                            schema = @Schema(implementation = TipoDocumento.class),
+                            example = "DNI"
+                    ),
+                    @Parameter(
+                            name = "numeroDocumento",
+                            in = ParameterIn.QUERY,
+                            description = "Número de documento del titular a modificar",
+                            required = true,
+                            schema = @Schema(type = "string"),
+                            example = "12345678"
+                    )
+            },
+            requestBody = @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "Datos actualizados del titular",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = TitularRecord.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Titular actualizado correctamente",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = TitularResponseRecord.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Titular no encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "409",
+                            description = "El nuevo número de documento ya existe",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    )
+            }
+    )
+    @PutMapping(params = { "tipoDocumento", "numeroDocumento" })
+    ResponseEntity<TitularResponseRecord> actualizarTitularPorDocumento(
+            @RequestParam @NotNull TipoDocumento tipoDocumento,
+            @RequestParam @NotBlank String numeroDocumento,
+            @Valid @RequestBody TitularRecord record
+    );
 
 }

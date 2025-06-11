@@ -44,5 +44,12 @@ public class TitularController implements TitularApi {
         var titular = titularService.obtenerPorTipoYNumeroDocumento(tipoDocumento, numeroDocumento);
         return ResponseEntity.ok(TitularResponseRecord.fromEntity(titular));
     }
-
+    @Override
+    public ResponseEntity<TitularResponseRecord> actualizarTitularPorDocumento(
+            @RequestParam TipoDocumento tipoDocumento,
+            @RequestParam String numeroDocumento,
+            @RequestBody TitularRecord record) {
+        var actualizado = titularService.actualizarTitularPorDocumento(tipoDocumento, numeroDocumento, record);
+        return ResponseEntity.ok(TitularResponseRecord.fromEntity(actualizado));
+    }
 }
