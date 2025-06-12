@@ -43,9 +43,21 @@ public class TitularService implements ITitularService{
         return titularRepository.findAll();
     }
 
-    public Titular actualizarTitular(Long id, TitularRecord updated) {
-        Titular existente = titularRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Titular no encontrado con id: " + id));
+    @Override
+    public Titular actualizarTitularPorDocumento(TipoDocumento tipoDocumento,
+                                                 String numeroDocumento,
+                                                 TitularRecord updated) {
+        Titular existente = titularRepository
+                .findByTipoDocumentoAndNumeroDocumento(tipoDocumento, numeroDocumento)
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Titular no encontrado con " + tipoDocumento + " Nº: " + numeroDocumento));
+
+        // Verificar si el nuevo número de documento ya existe en otro titular
+        if (!existente.getNumeroDocumento().equals(updated.numeroDocumento()) &&
+                titularRepository.existsByNumeroDocumento(updated.numeroDocumento())) {
+            throw new ResourceAlreadyExistsException(
+                    "Ya existe otro Titular con documento: " + updated.numeroDocumento());
+        }
 
         existente.setNombre(updated.nombre());
         existente.setApellido(updated.apellido());

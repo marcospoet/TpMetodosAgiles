@@ -11,7 +11,9 @@ public interface ITitularService {
     Titular createTitular(TitularRecord titular);
     Titular obtenerPorId(Long id);
     List<Titular> listarTodos();
-    Titular actualizarTitular(Long id, TitularRecord titular);
+    Titular actualizarTitularPorDocumento(TipoDocumento tipoDocumento,
+                                          String numeroDocumento,
+                                          TitularRecord titular);
     void eliminarTitular(Long id);
 
     @Transactional(readOnly = true)
