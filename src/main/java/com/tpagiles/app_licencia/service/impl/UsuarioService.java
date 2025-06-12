@@ -99,4 +99,22 @@ public class UsuarioService implements UserDetailsService, IUsuarioService {
         usuario.setActivo(false);
         repo.save(usuario);
     }
+
+    @Override
+    @Transactional(readOnly = true)
+    public UsuarioResponseRecord obtenerUsuarioPorId(Long id) {
+        Usuario usuario = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        return UsuarioResponseRecord.fromUsuario(usuario);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseRecord activarUsuario(Long id) {
+        Usuario usuario = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        usuario.setActivo(true);
+        Usuario actualizado = repo.save(usuario);
+        return UsuarioResponseRecord.fromUsuario(actualizado);
+    }
 }

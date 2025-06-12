@@ -53,4 +53,18 @@ public class UsuarioController implements UsuarioApi {
         usuarioService.eliminarUsuario(id);
         return ResponseEntity.noContent().build();
     }
+
+    @Override
+    @PreAuthorize("hasRole('SUPER_USER')")
+    public ResponseEntity<UsuarioResponseRecord> obtenerUsuarioPorId(@PathVariable @Positive Long id) {
+        var usuario = usuarioService.obtenerUsuarioPorId(id);
+        return ResponseEntity.ok(usuario);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('SUPER_USER')")
+    public ResponseEntity<UsuarioResponseRecord> activarUsuario(@PathVariable @Positive Long id) {
+        var usuarioActivado = usuarioService.activarUsuario(id);
+        return ResponseEntity.ok(usuarioActivado);
+    }
 }
