@@ -11,5 +11,5 @@ public interface IUsuarioService {
     UsuarioResponseRecord crearUsuario(UsuarioRecord usuario);
     List<UsuarioResponseRecord> listarTodos();
     UsuarioResponseRecord actualizarUsuario(Long id, UsuarioRecord usuario);
-    //void eliminarUsuario(Long id);
+    void eliminarUsuario(Long id);
 }

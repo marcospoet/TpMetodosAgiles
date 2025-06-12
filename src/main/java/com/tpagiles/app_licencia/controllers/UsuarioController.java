@@ -46,4 +46,11 @@ public class UsuarioController implements UsuarioApi {
         var usuarioActualizado = usuarioService.actualizarUsuario(id, usuarioDTO);
         return ResponseEntity.ok(usuarioActualizado);
     }
+
+    @Override
+    @PreAuthorize("hasRole('SUPER_USER')")
+    public ResponseEntity<Void> eliminarUsuario(@PathVariable @Positive Long id) {
+        usuarioService.eliminarUsuario(id);
+        return ResponseEntity.noContent().build();
+    }
 }

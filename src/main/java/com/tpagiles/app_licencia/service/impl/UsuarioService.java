@@ -91,4 +91,12 @@ public class UsuarioService implements UserDetailsService, IUsuarioService {
         return UsuarioResponseRecord.fromUsuario(guardado);
     }
 
+    @Override
+    @Transactional
+    public void eliminarUsuario(Long id) {
+        Usuario usuario = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        usuario.setActivo(false);
+        repo.save(usuario);
+    }
 }

@@ -40,6 +40,9 @@ public class Usuario implements UserDetails {
     @Column(name = "rol", length = 20)
     private Set<Rol> roles = new HashSet<>();
 
+    @Column(nullable = false)
+    private boolean activo = true;
+
     @Override
     public Collection<? extends GrantedAuthority> getAuthorities() {
         return roles.stream()

@@ -139,4 +139,33 @@ public interface UsuarioApi {
             @PathVariable @Positive Long id,
             @Valid @RequestBody UsuarioRecord usuarioDTO
     );
+
+    @Operation(
+            summary = "Eliminar (lógicamente) un usuario",
+            description = "Marca el usuario como inactivo. No se elimina físicamente de la base de datos.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "204",
+                            description = "Usuario marcado como inactivo correctamente"
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Usuario no encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "403",
+                            description = "Acceso denegado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    )
+            }
+    )
+    @DeleteMapping("/{id}")
+    ResponseEntity<Void> eliminarUsuario(@PathVariable @Positive Long id);
 }

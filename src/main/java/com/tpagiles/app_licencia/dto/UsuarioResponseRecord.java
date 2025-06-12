@@ -14,7 +14,8 @@ import java.util.Set;
         "nombre",
         "apellido",
         "mail",
-        "roles"
+        "roles",
+        "activo"
 })
 @Schema(description = "Datos de un usuario del sistema")
 public record UsuarioResponseRecord(
@@ -52,8 +53,14 @@ public record UsuarioResponseRecord(
                 example = "[\"OPERADOR\"]",
                 requiredMode = Schema.RequiredMode.REQUIRED
         )
-        Set<Rol> roles
+        Set<Rol> roles,
 
+        @Schema(
+                description = "Estado del usuario (true = activo, false = inactivo)",
+                example = "true",
+                requiredMode = Schema.RequiredMode.REQUIRED
+        )
+        boolean activo
 ) {
     public static UsuarioResponseRecord fromUsuario(Usuario usuario) {
         return new UsuarioResponseRecord(
@@ -61,7 +68,8 @@ public record UsuarioResponseRecord(
                 usuario.getNombre(),
                 usuario.getApellido(),
                 usuario.getMail(),
-                usuario.getRoles()
+                usuario.getRoles(),
+                usuario.isActivo()
         );
     }
 }
