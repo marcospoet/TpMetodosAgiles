@@ -1,6 +1,7 @@
 package com.tpagiles.app_licencia.controllers;
 
 import com.tpagiles.app_licencia.api.TitularApi;
+import com.tpagiles.app_licencia.dto.TitularLicenciaVigenteResponseRecord;
 import com.tpagiles.app_licencia.dto.TitularRecord;
 import com.tpagiles.app_licencia.dto.TitularResponseRecord;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
@@ -9,6 +10,8 @@ import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 
 @RestController
@@ -52,4 +55,18 @@ public class TitularController implements TitularApi {
         var actualizado = titularService.actualizarTitularPorDocumento(tipoDocumento, numeroDocumento, record);
         return ResponseEntity.ok(TitularResponseRecord.fromEntity(actualizado));
     }
+
+    @Override
+    public ResponseEntity<List<TitularLicenciaVigenteResponseRecord>> listarTitularesConLicenciasVigentes(
+            @RequestParam(required = false) String nombreApellido,
+            @RequestParam(required = false) List<String> grupoSanguineo,
+            @RequestParam(required = false) String factorRh,
+            @RequestParam(required = false) Boolean soloDonantes) {
+
+        List<TitularLicenciaVigenteResponseRecord> list = titularService
+                .buscarTitularesConLicenciasVigentes(nombreApellido, grupoSanguineo, factorRh, soloDonantes);
+
+        return ResponseEntity.ok(list);
+    }
+
 }
