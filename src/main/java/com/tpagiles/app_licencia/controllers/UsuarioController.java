@@ -2,6 +2,7 @@ package com.tpagiles.app_licencia.controllers;
 import com.tpagiles.app_licencia.api.UsuarioApi;
 import com.tpagiles.app_licencia.dto.UsuarioRecord;
 import com.tpagiles.app_licencia.dto.UsuarioResponseRecord;
+import com.tpagiles.app_licencia.dto.UsuarioUpdateRecord;
 import com.tpagiles.app_licencia.service.IUsuarioService;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
@@ -42,15 +43,30 @@ public class UsuarioController implements UsuarioApi {
     @PreAuthorize("hasRole('SUPER_USER')")
     public ResponseEntity<UsuarioResponseRecord> actualizarUsuario(
             @PathVariable @Positive Long id,
-            @Valid @RequestBody UsuarioRecord usuarioDTO) {
+            @Valid @RequestBody UsuarioUpdateRecord usuarioDTO) {
         var usuarioActualizado = usuarioService.actualizarUsuario(id, usuarioDTO);
         return ResponseEntity.ok(usuarioActualizado);
     }
+
 
     @Override
     @PreAuthorize("hasRole('SUPER_USER')")
     public ResponseEntity<Void> eliminarUsuario(@PathVariable @Positive Long id) {
         usuarioService.eliminarUsuario(id);
         return ResponseEntity.noContent().build();
+    }
+
+    @Override
+    @PreAuthorize("hasRole('SUPER_USER')")
+    public ResponseEntity<UsuarioResponseRecord> obtenerUsuarioPorId(@PathVariable @Positive Long id) {
+        var usuario = usuarioService.obtenerUsuarioPorId(id);
+        return ResponseEntity.ok(usuario);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('SUPER_USER')")
+    public ResponseEntity<UsuarioResponseRecord> activarUsuario(@PathVariable @Positive Long id) {
+        var usuarioActivado = usuarioService.activarUsuario(id);
+        return ResponseEntity.ok(usuarioActivado);
     }
 }

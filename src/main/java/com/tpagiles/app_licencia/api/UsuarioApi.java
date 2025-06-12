@@ -3,6 +3,7 @@ package com.tpagiles.app_licencia.api;
 import com.tpagiles.app_licencia.dto.ErrorResponse;
 import com.tpagiles.app_licencia.dto.UsuarioRecord;
 import com.tpagiles.app_licencia.dto.UsuarioResponseRecord;
+import com.tpagiles.app_licencia.dto.UsuarioUpdateRecord;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -137,7 +138,7 @@ public interface UsuarioApi {
     @PutMapping("/{id}")
     ResponseEntity<UsuarioResponseRecord> actualizarUsuario(
             @PathVariable @Positive Long id,
-            @Valid @RequestBody UsuarioRecord usuarioDTO
+            @Valid @RequestBody UsuarioUpdateRecord usuarioDTO
     );
 
     @Operation(
@@ -168,4 +169,54 @@ public interface UsuarioApi {
     )
     @DeleteMapping("/{id}")
     ResponseEntity<Void> eliminarUsuario(@PathVariable @Positive Long id);
+
+    @Operation(
+            summary = "Obtener usuario por ID",
+            description = "Obtiene los datos de un usuario por su ID.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Usuario encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = UsuarioResponseRecord.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Usuario no encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    )
+            }
+    )
+    @GetMapping("/{id}")
+    ResponseEntity<UsuarioResponseRecord> obtenerUsuarioPorId(@PathVariable @Positive Long id);
+
+    @Operation(
+            summary = "Activar usuario",
+            description = "Marca como activo a un usuario previamente inactivo.",
+            responses = {
+                    @ApiResponse(
+                            responseCode = "200",
+                            description = "Usuario activado correctamente",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = UsuarioResponseRecord.class)
+                            )
+                    ),
+                    @ApiResponse(
+                            responseCode = "404",
+                            description = "Usuario no encontrado",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class)
+                            )
+                    )
+            }
+    )
+    @PatchMapping("/{id}/activar")
+    ResponseEntity<UsuarioResponseRecord> activarUsuario(@PathVariable @Positive Long id);
 }

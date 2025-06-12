@@ -1,9 +1,6 @@
 package com.tpagiles.app_licencia.api;
 
-import com.tpagiles.app_licencia.dto.ErrorResponse;
-import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
-import com.tpagiles.app_licencia.dto.TitularRecord;
-import com.tpagiles.app_licencia.dto.TitularResponseRecord;
+import com.tpagiles.app_licencia.dto.*;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -23,6 +20,8 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
 import jakarta.validation.Valid;
+
+import java.util.List;
 
 @Tag(name = "Titulares", description = "API para gestión de titulares")
 @SecurityRequirement(name = "bearerAuth")    // ← aquí
@@ -409,5 +408,24 @@ public interface TitularApi {
             @RequestParam @NotBlank String numeroDocumento,
             @Valid @RequestBody TitularRecord record
     );
+
+    @Operation(
+            summary = "Listar titulares con licencias vigentes y filtros",
+            description = "Devuelve titulares que tienen al menos una licencia vigente. Se pueden aplicar filtros opcionales.",
+            parameters = {
+                    @Parameter(name = "nombreApellido", description = "Filtro parcial por nombre o apellido", example = "Pérez"),
+                    @Parameter(name = "grupoSanguineo", description = "Filtro por grupo sanguíneo (puede ser múltiple)", example = "A,B"),
+                    @Parameter(name = "factorRh", description = "Filtro por factor RH", example = "POSITIVO"),
+                    @Parameter(name = "soloDonantes", description = "Si es true, devuelve solo donantes", example = "true")
+            }
+    )
+    @GetMapping("/licencias-vigentes")
+    ResponseEntity<List<TitularLicenciaVigenteResponseRecord>> listarTitularesConLicenciasVigentes(
+            @RequestParam(required = false) String nombreApellido,
+            @RequestParam(required = false) List<String> grupoSanguineo,
+            @RequestParam(required = false) String factorRh,
+            @RequestParam(required = false) Boolean soloDonantes
+    );
+
 
 }
