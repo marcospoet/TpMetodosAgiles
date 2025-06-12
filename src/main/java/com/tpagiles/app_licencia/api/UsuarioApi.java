@@ -3,6 +3,7 @@ package com.tpagiles.app_licencia.api;
 import com.tpagiles.app_licencia.dto.ErrorResponse;
 import com.tpagiles.app_licencia.dto.UsuarioRecord;
 import com.tpagiles.app_licencia.dto.UsuarioResponseRecord;
+import com.tpagiles.app_licencia.dto.UsuarioUpdateRecord;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Content;
@@ -137,7 +138,7 @@ public interface UsuarioApi {
     @PutMapping("/{id}")
     ResponseEntity<UsuarioResponseRecord> actualizarUsuario(
             @PathVariable @Positive Long id,
-            @Valid @RequestBody UsuarioRecord usuarioDTO
+            @Valid @RequestBody UsuarioUpdateRecord usuarioDTO
     );
 
     @Operation(

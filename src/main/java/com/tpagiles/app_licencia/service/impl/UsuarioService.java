@@ -2,6 +2,7 @@ package com.tpagiles.app_licencia.service.impl;
 
 import com.tpagiles.app_licencia.dto.UsuarioRecord;
 import com.tpagiles.app_licencia.dto.UsuarioResponseRecord;
+import com.tpagiles.app_licencia.dto.UsuarioUpdateRecord;
 import com.tpagiles.app_licencia.exception.ResourceAlreadyExistsException;
 import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
 import com.tpagiles.app_licencia.model.Usuario;
@@ -67,11 +68,10 @@ public class UsuarioService implements UserDetailsService, IUsuarioService {
 
     @Override
     @Transactional
-    public UsuarioResponseRecord actualizarUsuario(Long id, UsuarioRecord updated) {
+    public UsuarioResponseRecord actualizarUsuario(Long id, UsuarioUpdateRecord updated) {
         Usuario existente = repo.findById(id)
                 .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
 
-        // Verificar si el email ya existe en otro usuario
         if (!existente.getMail().equals(updated.mail()) &&
                 repo.existsByMail(updated.mail())) {
             throw new ResourceAlreadyExistsException("Ya existe otro usuario con el email: " + updated.mail());
@@ -82,7 +82,7 @@ public class UsuarioService implements UserDetailsService, IUsuarioService {
         existente.setMail(updated.mail());
         existente.setRoles(updated.roles());
 
-        // Actualizar contraseña solo si se proporciona una nueva
+        // Solo actualizo contraseña si se mandó
         if (updated.password() != null && !updated.password().isBlank()) {
             existente.setPassword(encoder.encode(updated.password()));
         }
