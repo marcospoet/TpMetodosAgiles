@@ -2,6 +2,7 @@ package com.tpagiles.app_licencia.service;
 
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
+import com.tpagiles.app_licencia.dto.RenovarLicenciaRequest;
 import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import org.springframework.transaction.annotation.Transactional;
@@ -25,4 +26,7 @@ public interface ILicenciaService {
             TipoDocumento tipoDocumento,
             String numeroDocumento
     );
+
+    @Transactional(readOnly = true)
+    LicenciaResponseRecord renovarLicencia(RenovarLicenciaRequest request);
 }

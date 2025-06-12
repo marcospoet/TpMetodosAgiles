@@ -4,6 +4,7 @@ import com.tpagiles.app_licencia.dto.ErrorResponse;
 import com.tpagiles.app_licencia.dto.LicenciaRecord;
 import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
 import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
+import com.tpagiles.app_licencia.dto.RenovarLicenciaRequest;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -231,5 +232,136 @@ public interface LicenciaApi {
             @RequestParam @NotNull TipoDocumento tipoDocumento,
             @RequestParam @NotBlank String numeroDocumento
     );
-
+    @Operation(
+            summary     = "Renovar licencia (OPERADOR, SUPER_USER)",
+            description = """
+            Renueva una licencia existente por motivo de vencimiento o cambio de datos del titular.
+            Para licencias vencidas, se crea una nueva licencia con fechas actualizadas.
+            Para cambio de datos, se actualizan los datos del titular y se emite nueva licencia.
+            La licencia anterior queda inactiva. Requiere rol OPERADOR o SUPER_USER.
+            """,
+            security    = @SecurityRequirement(name = "bearerAuth"),
+            requestBody = @RequestBody(
+                    description = "Datos para renovar la licencia",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = RenovarLicenciaRequest.class),
+                            examples = {
+                                    @ExampleObject(
+                                            name = "RenovacionPorVencimiento",
+                                            summary = "Renovar licencia vencida",
+                                            value = """
+                                                {
+                                                      "licenciaId": 123,
+                                                      "motivoRenovacion": "VENCIDA",
+                                                      "numeroCopia": 1,
+                                                      "motivoCopia": "Primera copia por renovación",
+                                                      "licenciaOriginalId": 1
+                                                 }"""
+                                    ),
+                                    @ExampleObject(
+                                            name = "RenovacionPorCambioDatos",
+                                            summary = "Renovar por cambio de datos",
+                                            value = """
+                                                {
+                                                        "licenciaId": 124,
+                                                        "motivoRenovacion": "CAMBIO_DATOS",
+                                                        "nuevoNombre": "Juan Carlos",
+                                                        "nuevaDireccion": "Av. Libertador 1234",
+                                                        "numeroCopia": 2,
+                                                        "motivoCopia": "Copia por cambio de datos",
+                                                        "licenciaOriginalId": 1
+                                                 }"""
+                                    )
+                            }
+                    )
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "200", description = "Licencia renovada exitosamente",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = LicenciaResponseRecord.class),
+                                    examples = @ExampleObject(
+                                            name = "LicenciaRenovada",
+                                            value = """
+                                    {
+                                      "id": 156,
+                                      "titularId": 37,
+                                      "clase": "A",
+                                      "vigenciaAnios": 5,
+                                      "fechaEmision": "2025-06-11",
+                                      "fechaVencimiento": "2030-06-11",
+                                      "costo": 120.50,
+                                      "emisor": "sistema.renovacion",
+                                      "vigente": true
+                                    }"""
+                                    )
+                            )
+                    ),
+                    @ApiResponse(responseCode = "400", description = "Solicitud inválida o regla de negocio incumplida",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = {
+                                            @ExampleObject(
+                                                    name = "LicenciaNoVencida",
+                                                    value = """
+                                            {
+                                              "timestamp": "2025-06-11T10:00:00",
+                                              "status": 400,
+                                              "message": "La licencia aún no está vencida"
+                                            }"""
+                                            ),
+                                            @ExampleObject(
+                                                    name = "MotivoInvalido",
+                                                    value = """
+                                            {
+                                              "timestamp": "2025-06-11T10:00:00",
+                                              "status": 400,
+                                              "message": "Motivo de renovación no válido: OTRO"
+                                            }"""
+                                            )
+                                    }
+                            )
+                    ),
+                    @ApiResponse(responseCode = "404", description = "Licencia no encontrada",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "LicenciaNotFound",
+                                            value = """
+                                    {
+                                      "timestamp": "2025-06-11T10:05:00",
+                                      "status": 404,
+                                      "message": "Licencia no encontrada con ID: 999"
+                                    }"""
+                                    )
+                            )
+                    ),
+                    @ApiResponse(responseCode = "403", description = "Forbidden: rol insuficiente",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))
+                    ),
+                    @ApiResponse(responseCode = "500", description = "Error interno del servidor",
+                            content = @Content(
+                                    mediaType = "application/json",
+                                    schema = @Schema(implementation = ErrorResponse.class),
+                                    examples = @ExampleObject(
+                                            name = "ServerError",
+                                            value = """
+                                    {
+                                      "timestamp": "2025-06-11T10:10:00",
+                                      "status": 500,
+                                      "message": "Error interno al procesar renovación"
+                                    }"""
+                                    )
+                            )
+                    )
+            }
+    )
+    @PostMapping("/renovar")
+    ResponseEntity<LicenciaResponseRecord> renovarLicencia(
+            @Valid @RequestBody RenovarLicenciaRequest request
+    );
 }
