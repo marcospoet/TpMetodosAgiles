@@ -1,21 +1,29 @@
 package com.tpagiles.app_licencia.service.impl;
 
+import com.tpagiles.app_licencia.dto.UsuarioRecord;
+import com.tpagiles.app_licencia.dto.UsuarioResponseRecord;
+import com.tpagiles.app_licencia.exception.ResourceAlreadyExistsException;
+import com.tpagiles.app_licencia.exception.ResourceNotFoundException;
 import com.tpagiles.app_licencia.model.Usuario;
 import com.tpagiles.app_licencia.repository.UsuarioRepository;
-import org.springframework.security.core.userdetails.*;
+import com.tpagiles.app_licencia.service.IUsuarioService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.security.core.userdetails.UserDetails;
+import org.springframework.security.core.userdetails.UserDetailsService;
+import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
+import java.util.stream.Collectors;
 
 @Service
-public class UsuarioService implements UserDetailsService {
+@RequiredArgsConstructor
+public class UsuarioService implements UserDetailsService, IUsuarioService {
 
     private final UsuarioRepository repo;
     private final PasswordEncoder encoder;
-
-    public UsuarioService(UsuarioRepository repo, PasswordEncoder encoder) {
-        this.repo = repo;
-        this.encoder = encoder;
-    }
 
     @Override
     public UserDetails loadUserByUsername(String mail) throws UsernameNotFoundException {
@@ -29,5 +37,66 @@ public class UsuarioService implements UserDetailsService {
     public Usuario registrar(Usuario u) {
         u.setPassword(encoder.encode(u.getPassword()));
         return repo.save(u);
+    }
+
+    @Override
+    @Transactional
+    public UsuarioResponseRecord crearUsuario(UsuarioRecord record) {
+        if (repo.existsByMail(record.mail())) {
+            throw new ResourceAlreadyExistsException("Ya existe un usuario con el email: " + record.mail());
+        }
+
+        Usuario usuario = record.toUsuario();
+        usuario.setPassword(encoder.encode(record.password()));
+
+        Usuario guardado = repo.save(usuario);
+        return UsuarioResponseRecord.fromUsuario(guardado);
+    }
+
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<UsuarioResponseRecord> listarTodos() {
+        return repo.findAll().stream()
+                .filter(u -> u.getRoles().stream()
+                        .anyMatch(r -> r.name().equals("OPERADOR")))
+                .map(UsuarioResponseRecord::fromUsuario)
+                .collect(Collectors.toList());
+    }
+
+
+    @Override
+    @Transactional
+    public UsuarioResponseRecord actualizarUsuario(Long id, UsuarioRecord updated) {
+        Usuario existente = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+
+        // Verificar si el email ya existe en otro usuario
+        if (!existente.getMail().equals(updated.mail()) &&
+                repo.existsByMail(updated.mail())) {
+            throw new ResourceAlreadyExistsException("Ya existe otro usuario con el email: " + updated.mail());
+        }
+
+        existente.setNombre(updated.nombre());
+        existente.setApellido(updated.apellido());
+        existente.setMail(updated.mail());
+        existente.setRoles(updated.roles());
+
+        // Actualizar contraseña solo si se proporciona una nueva
+        if (updated.password() != null && !updated.password().isBlank()) {
+            existente.setPassword(encoder.encode(updated.password()));
+        }
+
+        Usuario guardado = repo.save(existente);
+        return UsuarioResponseRecord.fromUsuario(guardado);
+    }
+
+    @Override
+    @Transactional
+    public void eliminarUsuario(Long id) {
+        Usuario usuario = repo.findById(id)
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario no encontrado con id: " + id));
+        usuario.setActivo(false);
+        repo.save(usuario);
     }
 }

@@ -27,7 +27,8 @@ public class DataInitializer {
                         "Sistema",
                         "admin@municipio.gob",
                         encoder.encode("admin123"),
-                        Set.of(Rol.SUPER_USER)
+                        Set.of(Rol.SUPER_USER),
+                        true  // <--- nuevo campo
                 ));
             }
             if (!repo.existsByMail("operador@municipio.gob")) {
@@ -37,7 +38,8 @@ public class DataInitializer {
                         "Turno1",
                         "operador@municipio.gob",
                         encoder.encode("operador"),
-                        Set.of(Rol.OPERADOR)
+                        Set.of(Rol.OPERADOR),
+                        true  // <--- nuevo campo
                 ));
             }
         };
