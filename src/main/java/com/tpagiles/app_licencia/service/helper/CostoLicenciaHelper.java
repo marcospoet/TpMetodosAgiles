@@ -45,7 +45,8 @@ public class CostoLicenciaHelper {
                                 () -> new EnumMap<>(ClaseLicencia.class),
                                 Collectors.toUnmodifiableMap(
                                         TarifarioLicencia::getVigenciaAnios,
-                                        TarifarioLicencia::getCosto
+                                        TarifarioLicencia::getCosto,
+                                        (existing, replacement) -> existing  // merge: nos quedamos con el primero
                                 )
                         ));
 

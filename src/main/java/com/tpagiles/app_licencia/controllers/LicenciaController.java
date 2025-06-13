@@ -55,10 +55,6 @@ public class LicenciaController implements LicenciaApi {
 
     @Override
     public ResponseEntity<LicenciaResponseRecord> renovarLicencia(@Valid @RequestBody RenovarLicenciaRequest request) {
-        System.out.println("Request - Numero copia: " + request.numeroCopia());
-        System.out.println("Request - Motivo copia: " + request.motivoCopia());
-        System.out.println("Request - Licencia original ID: " + request.licenciaOriginalId());
-
         LicenciaResponseRecord licenciaRenovada = licenciaService.renovarLicencia(request);
         return ResponseEntity.ok(licenciaRenovada);
     }
