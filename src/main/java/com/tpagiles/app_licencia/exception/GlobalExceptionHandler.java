@@ -4,6 +4,7 @@ import com.tpagiles.app_licencia.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.*;
 import org.springframework.http.*;
+import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.*;
 import org.springframework.web.bind.annotation.*;
@@ -102,5 +103,13 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(buildError(HttpStatus.INTERNAL_SERVER_ERROR, "Error interno del servidor"));
+    }
+
+    @ExceptionHandler(DisabledException.class)
+    public ResponseEntity<ErrorResponse> handleDisabledException(DisabledException ex) {
+        logger.error("DisabledException: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(buildError(HttpStatus.UNAUTHORIZED, ex.getMessage()));
     }
 }

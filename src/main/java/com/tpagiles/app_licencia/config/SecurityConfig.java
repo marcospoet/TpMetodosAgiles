@@ -4,6 +4,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.tpagiles.app_licencia.dto.ErrorResponse;
 import com.tpagiles.app_licencia.model.enums.Rol;
 import com.tpagiles.app_licencia.security.JwtAuthenticationFilter;
+import com.tpagiles.app_licencia.service.JwtService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.*;
 import org.springframework.http.*;
@@ -14,6 +15,7 @@ import org.springframework.security.config.annotation.method.configuration.Enabl
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
+import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.*;
@@ -28,25 +30,19 @@ import java.util.List;
 @RequiredArgsConstructor
 public class SecurityConfig {
 
-    private final JwtAuthenticationFilter jwtFilter;
     private final ErrorResponseFactory factory;
     private final ObjectMapper mapper;
 
     @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationFilter jwtFilter) throws Exception {
         http
-                // 0) Manejo de errores REST (401 y 403)
                 .exceptionHandling(ex -> ex
                         .authenticationEntryPoint(restAuthenticationEntryPoint())
                         .accessDeniedHandler(restAccessDeniedHandler())
                 )
-                // 1) CORS para Swagger UI
                 .cors(Customizer.withDefaults())
-                // 2) CSRF off (stateless)
                 .csrf(AbstractHttpConfigurer::disable)
-                // 3) Sessions stateless
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-                // 4) Rutas públicas y protegidas
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(
                                 "/swagger-ui.html",
@@ -65,7 +61,6 @@ public class SecurityConfig {
                         .hasAnyRole(Rol.OPERADOR.name(), Rol.SUPER_USER.name())
                         .anyRequest().hasRole(Rol.SUPER_USER.name())
                 )
-                // 5) Filtro JWT
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
@@ -114,5 +109,8 @@ public class SecurityConfig {
         src.registerCorsConfiguration("/**", config);
         return src;
     }
-
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(JwtService jwtService, UserDetailsService userDetailsService) {
+        return new JwtAuthenticationFilter(jwtService, userDetailsService);
+    }
 }

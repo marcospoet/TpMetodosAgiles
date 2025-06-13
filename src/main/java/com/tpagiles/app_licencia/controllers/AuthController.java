@@ -16,6 +16,7 @@ import org.springframework.security.authentication.UsernamePasswordAuthenticatio
 import org.springframework.security.core.Authentication;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.List;
 import java.util.Map;
 
 @RestController
@@ -33,14 +34,29 @@ public class AuthController implements AuthApi {
                 new UsernamePasswordAuthenticationToken(req.mail(), req.password())
         );
 
+        // Obtener roles del Authentication
+        List<String> allRoles = auth.getAuthorities().stream()
+                .map(Object::toString)
+                .toList();
+
+        // Priorizar el rol principal
+        String principalRole;
+        if (allRoles.contains("ROLE_SUPER_USER")) {
+            principalRole = "SUPER_USER";
+        } else if (allRoles.contains("ROLE_OPERADOR")) {
+            principalRole = "OPERADOR";
+        } else {
+            principalRole = allRoles.isEmpty() ? "USER" : allRoles.get(0).replace("ROLE_", "");
+        }
+
         String token = jwtService.generateToken(
                 auth.getName(),
-                Map.of("roles", auth.getAuthorities().stream()
-                        .map(Object::toString).toList())
+                Map.of("roles", List.of(principalRole))
         );
 
         return ResponseEntity.ok(new AuthResponse(token));
     }
+
 
     @Override
     public ResponseEntity<AuthResponse> register(@RequestBody RegisterRequest req) {
