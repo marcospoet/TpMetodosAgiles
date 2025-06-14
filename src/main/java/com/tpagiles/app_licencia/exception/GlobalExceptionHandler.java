@@ -4,6 +4,7 @@ import com.tpagiles.app_licencia.dto.ErrorResponse;
 import jakarta.validation.ConstraintViolationException;
 import org.slf4j.*;
 import org.springframework.http.*;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.*;
@@ -111,5 +112,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(HttpStatus.UNAUTHORIZED)
                 .body(buildError(HttpStatus.UNAUTHORIZED, ex.getMessage()));
+    }
+    @ExceptionHandler(BadCredentialsException.class)
+    public ResponseEntity<ErrorResponse> handleBadCredentials(BadCredentialsException ex) {
+        logger.error("BadCredentialsException: {}", ex.getMessage());
+        return ResponseEntity
+                .status(HttpStatus.UNAUTHORIZED)
+                .body(buildError(HttpStatus.UNAUTHORIZED, "Credenciales inválidas"));
     }
 }
