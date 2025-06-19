@@ -23,5 +23,6 @@ public interface LicenciaRepository extends JpaRepository<Licencia, Long> {
     long countByFechaVencimientoBefore(LocalDate fechaVencimiento);
     boolean existsByTitularIdAndClaseAndVigenteTrueAndFechaVencimientoAfter(long TitularId, ClaseLicencia clase, LocalDate fechaVencimiento);
     boolean existsByTitularAndClase(Titular titular, ClaseLicencia claseLicencia);
+    List<Licencia> findByTitularAndClase(Titular titular, ClaseLicencia clase);
     List<Licencia> findByTitularTipoDocumentoAndTitularNumeroDocumento(TipoDocumento tipoDocumento, String numeroDocumento);
 }

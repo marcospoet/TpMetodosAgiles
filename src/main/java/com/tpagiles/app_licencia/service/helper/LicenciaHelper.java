@@ -1,6 +1,7 @@
 package com.tpagiles.app_licencia.service.helper;
 
 import com.tpagiles.app_licencia.exception.InvalidLicenseException;
+import com.tpagiles.app_licencia.model.Licencia;
 import com.tpagiles.app_licencia.model.Titular;
 import com.tpagiles.app_licencia.model.enums.ClaseLicencia;
 import com.tpagiles.app_licencia.repository.LicenciaRepository;
@@ -8,36 +9,50 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
+import java.util.List;
 
 @Component
 @RequiredArgsConstructor
 public class LicenciaHelper {
 
-    private static final int EDAD_MINIMA = 17;
+    private static final int EDAD_MINIMA_GENERAL = 17;
+    private static final int EDAD_MINIMA_PROFESIONAL = 21;
+    private static final int EDAD_MAXIMA_PROFESIONAL = 65;
 
     private final LicenciaRepository licenciaRepository;
 
     /**
-     * Valida que sea A o B para este sprint
+     * Valida si un titular puede obtener la clase solicitada según su edad y condiciones
      */
-    public void validarClaseBasica(ClaseLicencia clase) {
-        if (clase != ClaseLicencia.A && clase != ClaseLicencia.B) {
-            throw new InvalidLicenseException("Solo se permite emitir licencias clase A o B.");
+    public void validarClaseYRestricciones(Titular titular, ClaseLicencia clase) {
+        int edad = titular.getEdad();
+
+        switch (clase) {
+            case C, D, E -> {
+                if (edad < EDAD_MINIMA_PROFESIONAL)
+                    throw new InvalidLicenseException("La edad mínima para clase " + clase + " es 21 años.");
+
+                if (!titularTieneLicenciaB(titular))
+                    throw new InvalidLicenseException("Para obtener clase " + clase + " debe tener una licencia clase B vigente con al menos 1 año.");
+
+                if (edad > EDAD_MAXIMA_PROFESIONAL)
+                    throw new InvalidLicenseException("No se puede emitir clase " + clase + " a mayores de 65 años por ser profesional.");
+            }
+            case A, B, F, G -> {
+                if (edad < EDAD_MINIMA_GENERAL)
+                    throw new InvalidLicenseException("La edad mínima para clase " + clase + " es 17 años.");
+            }
+            default -> throw new InvalidLicenseException("Clase de licencia inválida: " + clase);
         }
     }
 
-    public void validarEdadMinima(Titular titular) {
-        if (titular.getEdad() < EDAD_MINIMA) {
-            throw new InvalidLicenseException(
-                    "Edad mínima para licencia básica: " + EDAD_MINIMA + " años."
-            );
-        }
+    private boolean titularTieneLicenciaB(Titular titular) {
+        List<Licencia> licenciasB = licenciaRepository.findByTitularAndClase(titular, ClaseLicencia.B);
+        return licenciasB.stream()
+                .anyMatch(lic -> lic.isVigente()
+                        && lic.getFechaEmision().isBefore(LocalDate.now().minusYears(1)));
     }
 
-    /**
-     * Calcula cuántos años de vigencia corresponden según la edad
-     * y si ya existe una A o B anterior.
-     */
     public int calcularVigencia(Titular titular) {
         int edad = titular.getEdad();
         if (edad < 21) {
@@ -53,11 +68,6 @@ public class LicenciaHelper {
             return 1;
         }
     }
-
-    /**
-     * Ajusta la fecha de vencimiento para que caiga en el mismo
-     * día y mes de nacimiento, más los años de vigencia.
-     */
     public LocalDate calcularFechaVencimiento(LocalDate fechaEmision,
                                               LocalDate fechaNacimiento,
                                               int vigenciaAnios) {

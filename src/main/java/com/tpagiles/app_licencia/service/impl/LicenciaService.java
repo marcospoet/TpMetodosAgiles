@@ -48,8 +48,7 @@ public class LicenciaService implements ILicenciaService {
                             ". Hay una vigente, debe renovarla."
             );
         }
-        licenciaHelper.validarClaseBasica(req.clase());
-        licenciaHelper.validarEdadMinima(titular);
+        licenciaHelper.validarClaseYRestricciones(titular, req.clase());
         int vigencia = licenciaHelper.calcularVigencia(titular);
 
         LocalDate hoy = LocalDate.now();
