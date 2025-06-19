@@ -1,10 +1,7 @@
 package com.tpagiles.app_licencia.controllers;
 
 import com.tpagiles.app_licencia.api.LicenciaApi;
-import com.tpagiles.app_licencia.dto.LicenciaRecord;
-import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
-import com.tpagiles.app_licencia.dto.RenovarLicenciaRequest;
-import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
+import com.tpagiles.app_licencia.dto.*;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import com.tpagiles.app_licencia.service.ILicenciaService;
 import jakarta.validation.Valid;
@@ -58,4 +55,10 @@ public class LicenciaController implements LicenciaApi {
         LicenciaResponseRecord licenciaRenovada = licenciaService.renovarLicencia(request);
         return ResponseEntity.ok(licenciaRenovada);
     }
+
+    @Override
+    public ResponseEntity<LicenciaResponseRecord> emitirCopia(@Valid @RequestBody EmitirCopiaRequest request) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(licenciaService.emitirCopia(request));
+    }
+
 }

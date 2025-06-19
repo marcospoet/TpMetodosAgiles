@@ -1,9 +1,6 @@
 package com.tpagiles.app_licencia.service;
 
-import com.tpagiles.app_licencia.dto.LicenciaRecord;
-import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
-import com.tpagiles.app_licencia.dto.RenovarLicenciaRequest;
-import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
+import com.tpagiles.app_licencia.dto.*;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,4 +26,5 @@ public interface ILicenciaService {
 
     @Transactional(readOnly = true)
     LicenciaResponseRecord renovarLicencia(RenovarLicenciaRequest request);
+    LicenciaResponseRecord emitirCopia(EmitirCopiaRequest request);
 }

@@ -253,6 +253,42 @@ public class LicenciaService implements ILicenciaService {
                 .licenciaOriginal(licenciaOriginal)
                 .build();
     }
+    @Override
+    @Transactional
+    public LicenciaResponseRecord emitirCopia(EmitirCopiaRequest request) {
+        Licencia original = licenciaRepo.findById(request.licenciaOriginalId())
+                .orElseThrow(() -> new ResourceNotFoundException(
+                        "Licencia original no encontrada con ID: " + request.licenciaOriginalId())
+                );
+
+        if (!original.isVigente() || original.getFechaVencimiento().isBefore(LocalDate.now())) {
+            throw new IllegalArgumentException("No se puede emitir copia de una licencia vencida o inactiva.");
+        }
+
+        Titular titular = original.getTitular();
+
+        Usuario emisor = usuarioRepo.findByMail(request.emisor())
+                .orElseThrow(() -> new ResourceNotFoundException("Usuario emisor no encontrado: " + request.emisor()));
+
+        int nuevoNroCopia = (original.getNumeroCopia() != null ? original.getNumeroCopia() : 0) + 1;
+
+        Licencia copia = Licencia.builder()
+                .titular(titular)
+                .clase(original.getClase())
+                .vigenciaAnios(original.getVigenciaAnios())
+                .fechaEmision(LocalDate.now())
+                .fechaVencimiento(original.getFechaVencimiento())
+                .costo(50.0)
+                .numeroCopia(nuevoNroCopia)
+                .motivoCopia(request.motivo())
+                .licenciaOriginal(original)
+                .emisor(emisor)
+                .vigente(true)
+                .build();
+
+        return LicenciaResponseRecord.fromEntity(licenciaRepo.save(copia));
+    }
+
 }
 
 

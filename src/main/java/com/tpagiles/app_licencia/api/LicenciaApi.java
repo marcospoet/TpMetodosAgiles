@@ -1,10 +1,6 @@
 package com.tpagiles.app_licencia.api;
 
-import com.tpagiles.app_licencia.dto.ErrorResponse;
-import com.tpagiles.app_licencia.dto.LicenciaRecord;
-import com.tpagiles.app_licencia.dto.LicenciaResponseRecord;
-import com.tpagiles.app_licencia.dto.TitularConLicenciasResponseRecord;
-import com.tpagiles.app_licencia.dto.RenovarLicenciaRequest;
+import com.tpagiles.app_licencia.dto.*;
 import com.tpagiles.app_licencia.model.enums.TipoDocumento;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
@@ -364,4 +360,30 @@ public interface LicenciaApi {
     ResponseEntity<LicenciaResponseRecord> renovarLicencia(
             @Valid @RequestBody RenovarLicenciaRequest request
     );
+    @Operation(
+            summary = "Emitir copia de licencia (OPERADOR, SUPER_USER)",
+            description = "Emite una nueva copia de una licencia existente (por pérdida, robo, deterioro). Requiere rol OPERADOR o SUPER_USER.",
+            security = @SecurityRequirement(name = "bearerAuth"),
+            requestBody = @RequestBody(
+                    description = "Datos necesarios para emitir la copia",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = EmitirCopiaRequest.class)
+                    )
+            ),
+            responses = {
+                    @ApiResponse(responseCode = "201", description = "Copia emitida exitosamente",
+                            content = @Content(schema = @Schema(implementation = LicenciaResponseRecord.class))),
+                    @ApiResponse(responseCode = "400", description = "La licencia está vencida o motivo inválido",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @ApiResponse(responseCode = "404", description = "Licencia original o emisor no encontrado",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class))),
+                    @ApiResponse(responseCode = "500", description = "Error interno",
+                            content = @Content(schema = @Schema(implementation = ErrorResponse.class)))
+            }
+    )
+    @PostMapping("/copias")
+    ResponseEntity<LicenciaResponseRecord> emitirCopia(@Valid @RequestBody EmitirCopiaRequest request);
+
 }
